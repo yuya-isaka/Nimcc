@@ -2,6 +2,7 @@
 > 参考：https://github.com/rui314/9cc
 ***
 ## 開発環境構築（Dockerで構築）
+(要らなかったかも，一旦ローカルで開発を進める...4/11)
 > 参考：https://www.sigbus.info/compilerbook#docker
 
 #### ソースコード編集やGit操作など，プラットフォームに依存しない通常の開発作業はDockerの外で行い，ビルドやテストのコマンドのみDockerの中で実行する構成
@@ -47,3 +48,39 @@
     ```
 
 ***
+
+## Dockerのエイリアス作成
+(Docker関連要らなかったかもだから，一旦保留)
+
+***
+
+## 初めの第一歩
+1. nimcc.nim を準備
+
+    - コマンドライン引数を一つ受け取り，アセンブリに変換（とても簡単な処理）
+    ```
+    コンパイルして実行ファイルを作成
+    $ nim c -r nimcc.nim 123
+
+    アセンブリファイルを生成
+    $ ./nimcc 123 > tmp.s
+
+    アセンブル（macOSだと出来ない, _mainにすると実行できた．）
+    $ cc -o tmp tmp.s
+    $ ./tmp
+    $ echo $?
+    ```
+2. 自動テストの作成
+
+    - test.sh作成
+    ```
+    実行権限を付与
+    chmod a+x test.sh
+    ```
+
+    - test.sh内でnimコンパイル&アセンブルを実行
+
+3. Makefile作成
+
+    - make か make test でテスト実行
+    - make clean で綺麗

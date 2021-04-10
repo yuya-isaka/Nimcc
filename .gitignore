@@ -1,0 +1,6 @@
+*~
+*.o
+tmp*
+a.out
+nimcc
+.DS_Store

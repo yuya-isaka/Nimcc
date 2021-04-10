@@ -70,6 +70,8 @@
     $ ./tmp
     $ echo $?
     ```
+
+    - _mainにする必要がある
 2. 自動テストの作成
 
     - test.sh作成
@@ -84,3 +86,9 @@
 
     - make か make test でテスト実行
     - make clean で綺麗
+
+
+## メモ
+- NimMemo.md
+- CompilerMemo.md
+- CSMemo

@@ -17,6 +17,7 @@ type
     next: Token       # 次の入力トークン
     val: int          # kindがTkNumの場合，その数値
     str: string       # トークン文字列
+    at: int           # 入力文字配列のうち，このトークンの先頭インデックス
 
 # 現在着目しているトークン
 var token: Token
@@ -29,6 +30,18 @@ if paramCount() != 1:
 for i in commandLineParams()[0]:
   input.add(i)
 
+proc errorAt(errorMsg: string) =
+  var tmp: string
+  for i in input:
+    tmp.add($i)
+  echo tmp
+  if token == nil: # 初期化されていない参照型Objectはnilとなる # 例外チェック # 本来はoption型とかを使うべき
+    echo " ".repeat(idx) & "^"
+  else:
+    echo " ".repeat(token.at) & "^"
+  echo idx
+  quit(errorMsg)
+
 # 現在のトークンが期待している記号の時は，トークンを１つ読み進めて真を返す． # それ以外の場合には偽を返す．
 proc consume(op: char): bool =
   if token.kind != TkReserved or token.str[0] != op:
@@ -39,13 +52,13 @@ proc consume(op: char): bool =
 # 現在のトークンが期待している記号の時には，トークンを１つ読み進める．# それ以外の場合にはエラー報告．
 proc expect(op: char) =
   if token.kind != TkReserved or token.str[0] != op:
-    quit(fmt"{op}ではありません．")
+    errorAt(fmt"{op}ではありません．")
   token = token.next
 
 # 現在のトークンが数値の場合，トークンを１つ読み進めてその数値を返す. # それ以外の倍にはエラーを報告する
 proc expectNumber(): int =
   if token.kind != TkNum:
-    quit("数ではありません．")
+    errorAt("数ではありません．")
   var val = token.val
   token = token.next
   return val
@@ -68,6 +81,7 @@ proc newToken(kind: TokenKind, cur: Token, str: string): Token =
   var tok = new Token
   tok.kind = kind
   tok.str = str
+  tok.at = idx
   cur.next = tok
   return tok
 
@@ -94,7 +108,7 @@ proc tokenize(): Token =
       inc(idx)
       continue
 
-    quit("トークナイズできません．")
+    errorAt("トークナイズできません．")
 
   discard newToken(TkEof, cur, "\n")
   return head.next

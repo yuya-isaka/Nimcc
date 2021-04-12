@@ -1,7 +1,4 @@
-nimcc:
-	nim c nimcc.nim
-
-test: nimcc
+test:
 	./test.sh
 
 clean:

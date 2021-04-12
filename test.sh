@@ -16,11 +16,13 @@ assert() {
     fi
 }
 
-# nim c nimcc.nim
+nim c nimcc.nim
 
 assert 0 0
 assert 30 30
 assert 21 "5+20-4"
 assert 20 "5+5+5+5"
+assert 41 " 12 + 34 - 5"
+assert 30 " 10 + 30 - 10   "
 
 echo OK

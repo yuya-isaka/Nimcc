@@ -5,6 +5,7 @@
 - 現状，アセンブリをmain → _main と書き換えてmacで動作してる（のでmacで開発中，詰まったらDockerのLinux環境にお引っ越し．．）
 - 詰まったので，アセンブリを _main -> main に書き戻してお引っ越し
 ***
+
 ## 開発環境構築（Dockerで構築）
 - (要らなかったかも，一旦ローカルで開発を進める...4/11)
 - 要りました！ x86-64のmovzb命令がmacだと使えなかった．．詳しく調べてないけど，Dockerで開発
@@ -101,6 +102,13 @@
 - nimMemo2.md
 - compilerMemo.md
 - csMemo
+
+***
+
+## Nim，外部モジュール
+- OS
+- strutils
+- strformat
 
 ***
 

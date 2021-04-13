@@ -2,7 +2,7 @@
 *.o
 tmp*
 a.out
-nimcc
+main
 .DS_Store
 test.nim
 test

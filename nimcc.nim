@@ -44,15 +44,15 @@ proc errorAt(errorMsg: string) =
   quit(errorMsg)
 
 # 現在のトークンが期待している記号の時は，トークンを１つ読み進めて真を返す． # それ以外の場合には偽を返す．
-proc consume(op: char): bool =
-  if token.kind != TkReserved or token.str[0] != op:
+proc consume(op: string): bool =
+  if token.kind != TkReserved or token.str != op:
     return false
   token = token.next
   return true
 
 # 現在のトークンが期待している記号の時には，トークンを１つ読み進める．# それ以外の場合にはエラー報告．
-proc expect(op: char) =
-  if token.kind != TkReserved or token.str[0] != op:
+proc expect(op: string) =
+  if token.kind != TkReserved or token.str != op:
     errorAt(fmt"{op}ではありません．")
   token = token.next
 
@@ -72,7 +72,7 @@ proc checkNum(): string =
   var tmpIdx = idx + 1
   var tmpStr = $input[idx]
   while len(input) > tmpIdx and isDigit(input[tmpIdx]):
-    tmpStr = tmpStr & $(input[tmpIdx])
+    tmpStr.add($(input[tmpIdx]))
     inc(idx)
     inc(tmpIdx)
   return tmpStr
@@ -97,13 +97,25 @@ proc tokenize(): Token =
       inc(idx)
       continue
 
-    if input[idx] == '+' or input[idx] == '-' or input[idx] == '*' or input[idx] == '/' or input[idx] == '(' or input[idx] == ')':
+    # こっちを先
+    var tmpStr: string = $input[idx]
+    if len(input) > idx+1:
+      tmpStr.add($input[idx+1])
+    if tmpStr == "==" or tmpStr == "!=" or tmpStr == "<=" or tmpStr == ">=":
+      cur = newToken(TkReserved, cur, tmpStr)
+      idx += 2 # 2個インデックス進める
+      continue
+
+    # こっちを後
+    if input[idx] == '+' or input[idx] == '-' or input[idx] == '*' or
+      input[idx] == '/' or input[idx] == '(' or input[idx] == ')' or
+      input[idx] == '<' or input[idx] == '>':
       cur = newToken(TkReserved, cur, $input[idx])
       inc(idx)
       continue
 
     if isDigit(input[idx]):
-      var str = checkNum()
+      var str: string = checkNum()
       cur = newToken(TkNum, cur, $input[idx])
       cur.val = parseInt(str)
       inc(idx)
@@ -114,6 +126,8 @@ proc tokenize(): Token =
   discard newToken(TkEof, cur, "\n")
   return head.next
 
+#----------------------------------------------------
+
 # ノードの種類（AST）
 type
   NodeKind = enum
@@ -121,7 +135,11 @@ type
     NdSub,  # -
     NdMul,  # *
     NdDiv,  # /
-    NdNum   # 整数
+    NdNum,  # 整数
+    NdEq,   # ==
+    NdNe,   # !=
+    NdL,    # <
+    NdLe,   # <=
 
 # ノード型
 type
@@ -146,45 +164,86 @@ proc newNodeNum(val: int): Node =
   node.val = val
   return node
 
+#--------------------------------------------------
+
+# 優先度低い順
 proc expr(): Node
+proc equality(): Node
+proc relational(): Node
+proc add(): Node
+proc mul(): Node
+proc unary(): Node
+proc primary(): Node
 
-proc primary(): Node =
-  if consume('('):
-    var node: Node = expr()
-    expect(')')
-    return node
+proc expr(): Node =
+  var node: Node = equality()
+  return node
 
-  return newNodeNum(expectNumber())
+proc equality(): Node =
+  var node: Node = relational()
 
-proc unary(): Node =
-  if consume('+'):
-    return primary()
-  if consume('-'):
-    return newNode(NdSub, newNodeNum(0), primary())
+  while true:
+    if consume("=="):
+      node = newNode(NdEq, node, relational())
+    elif consume("!="):
+      node = newNode(NdNe, node, relational())
+    else:
+      return node
 
-  return primary()
+proc relational(): Node =
+  var node: Node = add()
+
+  while true:
+    if consume("<"):
+      node = newNode(NdL, node, add())
+    elif consume("<="):
+      node = newNode(NdLe, node, add())
+    elif consume(">"):
+      node = newNode(NdL, add(), node)
+    elif consume(">="):
+      node = newNode(NdLe, add(), node)
+    else:
+      return node
+
+proc add(): Node =
+  var node: Node = mul()
+
+  while true:
+    if consume("+"):
+      node = newNode(NdAdd, node, mul())
+    elif consume("-"):
+      node = newNode(NdSub, node, mul())
+    else:
+      return node
 
 proc mul(): Node =
   var node: Node = unary()
 
   while true:
-    if consume('*'):
+    if consume("*"):
       node = newNode(NdMul, node, unary())
-    elif consume('/'):
+    elif consume("/"):
       node = newNode(NdDiv, node, unary())
     else:
       return node
 
-proc expr(): Node =
-  var node: Node = mul()
+proc unary(): Node =
+  if consume("+"):
+    return primary()
+  if consume("-"):
+    return newNode(NdSub, newNodeNum(0), unary()) # - - や - + などを許すために，ここはunary
 
-  while true:
-    if consume('+'):
-      node = newNode(NdAdd, node, mul())
-    elif consume('-'):
-      node = newNode(NdSub, node, mul())
-    else:
-      return node
+  return primary()
+
+proc primary(): Node =
+  if consume("("):
+    var node: Node = expr() # 再帰的に使うー
+    expect(")")
+    return node
+
+  return newNodeNum(expectNumber())
+
+#-----------------------------------------------------------
 
 proc gen(node: Node) =
   if node.kind == NdNum:
@@ -207,10 +266,28 @@ proc gen(node: Node) =
   of NdDiv:
     echo "  cqo"
     echo "  idiv rdi"
+  of NdEq:
+    echo "  cmp rax, rdi"
+    echo "  sete al"
+    echo "  movzb rax, al"
+  of NdNe:
+    echo "  cmp rax, rdi"
+    echo "  setne al"
+    echo "  movzb rax, al"
+  of NdL:
+    echo "  cmp rax, rdi"
+    echo "  setl al"
+    echo "  movzb rax, al"
+  of NdLe:
+    echo "  cmp rax, rdi"
+    echo "  setle al"
+    echo "  movzb rax, al"
   of NdNum:
-    quit("何かがおかしい．")
+    quit("何かがおかしい")
 
   echo "  push rax"   # 式全体の結果を，スタックトップにプッシュ
+
+# -----------------------------------------------------------------
 
 # メイン関数
 proc main() =
@@ -218,8 +295,8 @@ proc main() =
   var node = expr()
 
   echo ".intel_syntax noprefix"
-  echo ".globl _main"
-  echo "_main:"
+  echo ".globl main"
+  echo "main:"
 
   gen(node)
 

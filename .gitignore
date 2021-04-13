@@ -4,3 +4,5 @@ tmp*
 a.out
 nimcc
 .DS_Store
+test.nim
+test

@@ -3,9 +3,11 @@
 
 - 64ビットのLinux環境を想定
 - 現状，アセンブリをmain → _main と書き換えてmacで動作してる（のでmacで開発中，詰まったらDockerのLinux環境にお引っ越し．．）
+- 詰まったので，アセンブリを _main -> main に書き戻してお引っ越し
 ***
 ## 開発環境構築（Dockerで構築）
-(要らなかったかも，一旦ローカルで開発を進める...4/11)
+- (要らなかったかも，一旦ローカルで開発を進める...4/11)
+- 要りました！ x86-64のmovzb命令がmacだと使えなかった．．詳しく調べてないけど，Dockerで開発
 > 参考：https://www.sigbus.info/compilerbook#docker
 
 #### ソースコード編集やGit操作など，プラットフォームに依存しない通常の開発作業はDockerの外で行い，ビルドやテストのコマンドのみDockerの中で実行する構成
@@ -24,10 +26,10 @@
     $ docker run --rm compilerbooknim ls /
 
     コンテナを使ったビルド
-    $ docker run --rm -v $HOME/nimcc:/nimcc -w /9cc compilerbooknim make test
+    $ docker run --rm -v $HOME/nimcc:/home/user/nimcc -w /9cc compilerbooknim make test
 
     コンテナをインタラクティブに仕様
-    $ docker run --rm -it -v $HOME/nimcc:/nimcc compilerbooknim
+    $ docker run --rm -it -v $HOME/nimcc:/home/user/nimcc compilerbooknim
     ```
 4. *コンテナ/イメージに新たなアプリケーションを追加
 
@@ -54,6 +56,7 @@
 
 ## Dockerのエイリアス作成
 (Docker関連要らなかったかもだから，一旦保留)
+つくらんかも
 
 ***
 
@@ -126,3 +129,10 @@
 - 初期化されていない参照型のオブジェクトはnilとなるので，そのチェックを入れている
     > 本来はOption型でnull安全に実装すべき．．．
 
+### 5. 四則演算完成
+
+### 6. 単項プラス，単項マイナス
+
+### 7. 比較演算子
+
+### 分割コンパイル

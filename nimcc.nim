@@ -19,7 +19,7 @@ type
     str: string       # トークン文字列
     at: int           # 入力文字配列のうち，どこを指しているか（先頭インデックス）
 
-# 現在着目しているトークン
+# **********現在着目しているトークン***********
 var token: Token
 
 # 入力文字列準備
@@ -97,7 +97,7 @@ proc tokenize(): Token =
       inc(idx)
       continue
 
-    if input[idx] == '+' or input[idx] == '-':
+    if input[idx] == '+' or input[idx] == '-' or input[idx] == '*' or input[idx] == '/' or input[idx] == '(' or input[idx] == ')':
       cur = newToken(TkReserved, cur, $input[idx])
       inc(idx)
       continue
@@ -114,25 +114,109 @@ proc tokenize(): Token =
   discard newToken(TkEof, cur, "\n")
   return head.next
 
+# ノードの種類（AST）
+type
+  NodeKind = enum
+    NdAdd,  # +
+    NdSub,  # -
+    NdMul,  # *
+    NdDiv,  # /
+    NdNum   # 整数
+
+# ノード型
+type
+  Node = ref object
+    kind: NodeKind  # ノードの種類
+    lhs: Node       # 左辺
+    rhs: Node       # 右辺
+    val: int        # kindがNdNumの場合の数値
+
+# 二項演算子用のノード生成（左辺と右辺を持つ）
+proc newNode(kind: NodeKind, lhs: Node, rhs: Node): Node =
+  var node = new Node
+  node.kind = kind
+  node.lhs = lhs
+  node.rhs = rhs
+  return node
+
+# 数値用のノード生成
+proc newNodeNum(val: int): Node =
+  var node = new Node
+  node.kind = NdNum
+  node.val = val
+  return node
+
+proc expr(): Node
+
+proc primary(): Node =
+  if consume('('):
+    var node: Node = expr()
+    expect(')')
+    return node
+
+  return newNodeNum(expectNumber())
+
+proc mul(): Node =
+  var node: Node = primary()
+
+  while true:
+    if consume('*'):
+      node = newNode(NdMul, node, primary())
+    elif consume('/'):
+      node = newNode(NdDiv, node, primary())
+    else:
+      return node
+
+proc expr(): Node =
+  var node: Node = mul()
+
+  while true:
+    if consume('+'):
+      node = newNode(NdAdd, node, mul())
+    elif consume('-'):
+      node = newNode(NdSub, node, mul())
+    else:
+      return node
+
+proc gen(node: Node) =
+  if node.kind == NdNum:
+    echo fmt"  push {node.val}"
+    return
+
+  gen(node.lhs)
+  gen(node.rhs)
+
+  echo "  pop rdi"
+  echo "  pop rax"
+
+  case node.kind
+  of NdAdd:
+    echo "  add rax, rdi"
+  of NdSub:
+    echo "  sub rax, rdi"
+  of NdMul:
+    echo "  imul rax, rdi"
+  of NdDiv:
+    echo "  cqo"
+    echo "  idiv rdi"
+  of NdNum:
+    quit("何かがおかしい．")
+
+  echo "  push rax"
+
 # メイン関数
 proc main() =
   token = tokenize()
+  var node = expr()
 
   echo ".intel_syntax noprefix"
   echo ".globl _main"
   echo "_main:"
 
-  echo fmt"  mov rax, {expectNumber()}"
+  gen(node)
 
-  while not atEof():
-    if consume('+'):
-      echo fmt"  add rax, {expectNumber()}"
-      continue
-
-    expect('-')
-    echo fmt"  sub rax, {expectNumber()}"
-
-  echo "  ret"
+  echo "  pop rax"  # スタックトップに式全体の値が残っているはずなので，RAXにロードする
+  echo "  ret"      # 関数はRAXレジスタを返す
   quit(0)
 
 main()

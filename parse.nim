@@ -1,4 +1,7 @@
+
 import header
+
+#---------------------------------------------------------
 
 # 二項演算子用のノード生成（左辺と右辺を持つ）
 proc newNode(kind: NodeKind, lhs: Node, rhs: Node): Node =
@@ -15,7 +18,7 @@ proc newNodeNum(val: int): Node =
   node.val = val
   return node
 
-#--------------------------------------------------
+#---------------------------------------------------------
 
 # 優先度低い順
 proc expr*(): Node

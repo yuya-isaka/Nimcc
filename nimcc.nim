@@ -17,19 +17,20 @@ type
     next: Token       # 次の入力トークン
     val: int          # kindがTkNumの場合，その数値
     str: string       # トークン文字列
-    at: int           # 入力文字配列のうち，このトークンの先頭インデックス
+    at: int           # 入力文字配列のうち，どこを指しているか（先頭インデックス）
 
 # 現在着目しているトークン
 var token: Token
-var idx = 0
 
 # 入力文字列準備
+var idx = 0
 var input: seq[char]
 if paramCount() != 1:
   quit("引数の個数が正しくありません．")
 for i in commandLineParams()[0]:
   input.add(i)
 
+# エラー表示関数
 proc errorAt(errorMsg: string) =
   var tmp: string
   for i in input:

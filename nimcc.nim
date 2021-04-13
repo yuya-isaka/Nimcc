@@ -156,14 +156,22 @@ proc primary(): Node =
 
   return newNodeNum(expectNumber())
 
+proc unary(): Node =
+  if consume('+'):
+    return primary()
+  if consume('-'):
+    return newNode(NdSub, newNodeNum(0), primary())
+
+  return primary()
+
 proc mul(): Node =
-  var node: Node = primary()
+  var node: Node = unary()
 
   while true:
     if consume('*'):
-      node = newNode(NdMul, node, primary())
+      node = newNode(NdMul, node, unary())
     elif consume('/'):
-      node = newNode(NdDiv, node, primary())
+      node = newNode(NdDiv, node, unary())
     else:
       return node
 

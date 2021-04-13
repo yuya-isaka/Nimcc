@@ -88,9 +88,9 @@ proc newToken(kind: TokenKind, cur: Token, str: string): Token =
 
 # 入力文字列inputをトークナイズして返す
 proc tokenize(): Token =
-  var head: Token = new Token # 参照型のオブジェクト生成（ヒープ領域に確保）
+  var head: Token = new Token   # 参照型のオブジェクト生成（ヒープ領域に確保）
   head.next = nil
-  var cur = head # 参照のコピーなので，実体は同じもの
+  var cur = head    # 参照のコピーなので，実体は同じもの
 
   while len(input) > idx:
     if isSpaceAscii(input[idx]):
@@ -202,7 +202,7 @@ proc gen(node: Node) =
   of NdNum:
     quit("何かがおかしい．")
 
-  echo "  push rax"
+  echo "  push rax"   # 式全体の結果を，スタックトップにプッシュ
 
 # メイン関数
 proc main() =

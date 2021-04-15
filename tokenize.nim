@@ -1,7 +1,4 @@
-
 import header
-import parse
-import codegen
 import strutils
 
 # 10以上の数値に対応
@@ -23,8 +20,14 @@ proc newToken(kind: TokenKind, cur: Token, str: string): Token =
   cur.next = tok
   return tok
 
+proc isAlpha(c: string): bool =
+  return ("a" <= c and c <= "z") or ("A" <= c and c <= "Z") or c == "_"
+
+proc isAlnum(c: string): bool =
+  return isAlpha(c) or ("0" <= c and c <= "9")
+
 # 入力文字列inputをトークナイズして返す
-proc tokenize(): Token =
+proc tokenize*(): Token =
   var head: Token = new Token   # 参照型のオブジェクト生成（ヒープ領域に確保）
   head.next = nil
   var cur = head    # 参照のコピーなので，実体は同じもの
@@ -34,21 +37,44 @@ proc tokenize(): Token =
       inc(idx)
       continue
 
+    # こっちを先("return")
+    var tmpStr1: string = $input[idx]
+    var tmp1: int = idx+1
+    for _ in 1..5:
+      if len(input) > tmp1:
+        tmpStr1.add($input[tmp1])
+        inc(tmp1)
+    if tmpStr1 == "return" and not isAlnum($input[tmp1]):
+      cur = newToken(TkReserved, cur, tmpStr1)
+      idx += 6
+      continue
+
     # こっちを先
-    var tmpStr: string = $input[idx]
+    var tmpStr2: string = $input[idx]
     if len(input) > idx+1:
-      tmpStr.add($input[idx+1])
-    if tmpStr == "==" or tmpStr == "!=" or tmpStr == "<=" or tmpStr == ">=":
-      cur = newToken(TkReserved, cur, tmpStr)
+      tmpStr2.add($input[idx+1])
+    if tmpStr2 == "==" or tmpStr2 == "!=" or tmpStr2 == "<=" or tmpStr2 == ">=":
+      cur = newToken(TkReserved, cur, tmpStr2)
       idx += 2 # 2個インデックス進める
       continue
 
     # こっちを後
     if input[idx] == '+' or input[idx] == '-' or input[idx] == '*' or
       input[idx] == '/' or input[idx] == '(' or input[idx] == ')' or
-      input[idx] == '<' or input[idx] == '>':
+      input[idx] == '<' or input[idx] == '>' or input[idx] == ';' or
+      input[idx] == '=':
       cur = newToken(TkReserved, cur, $input[idx])
       inc(idx)
+      continue
+
+    # 識別子，変数
+    if isAlpha($input[idx]):
+      var tmpStr: string = $input[idx]
+      inc(idx)
+      while isAlnum($input[idx]):
+        tmpStr.add($input[idx])
+        inc(idx)
+      cur = newToken(TkIdent, cur, tmpStr)
       continue
 
     if isDigit(input[idx]):
@@ -62,21 +88,3 @@ proc tokenize(): Token =
 
   discard newToken(TkEof, cur, "\n")
   return head.next
-
-
-# メイン関数
-proc main() =
-  token = tokenize()
-  var node = expr()
-
-  echo ".intel_syntax noprefix"
-  echo ".globl main"
-  echo "main:"
-
-  gen(node)
-
-  echo "  pop rax"  # スタックトップに式全体の値が残っているはずなので，RAXにロードする
-  echo "  ret"      # 関数はRAXレジスタを返す
-  quit(0)
-
-main()

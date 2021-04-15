@@ -1,27 +1,64 @@
-
 import header
 
+var locals: Lvar
+
+proc findLvar(tok: Token): (Lvar, bool) =
+  var tmp: Lvar = locals
+  while true:
+    if tmp == nil:
+      break
+    if tmp.name == tok.str:
+      return (tmp, true)
+    tmp = tmp.next
+
+  return (tmp, false)
 #---------------------------------------------------------
+
+# 単純なノード生成
+proc newNode(kind: NodeKind): Node =
+  var node = new Node
+  node.kind = kind
+  return node
 
 # 二項演算子用のノード生成（左辺と右辺を持つ）
 proc newNode(kind: NodeKind, lhs: Node, rhs: Node): Node =
-  var node = new Node
-  node.kind = kind
+  var node: Node = newNode(kind)
   node.lhs = lhs
   node.rhs = rhs
   return node
 
+# 単項演算子のノード
+proc newNode(kind: NodeKind, lhs: Node): Node =
+  var node: Node = newNode(kind)
+  node.lhs = lhs
+  return node
+
 # 数値用のノード生成
-proc newNodeNum(val: int): Node =
-  var node = new Node
-  node.kind = NdNum
+proc newNode(val: int): Node =
+  var node: Node = newNode(NdNum)
   node.val = val
   return node
+
+# 変数用のノード
+proc newNode(arg: Lvar): Node =
+  var node = newNode(NdLvar)
+  node.arg = arg
+  return node
+
+proc pushLvar(name: string): Lvar =
+  var arg = new Lvar
+  arg.next = locals
+  arg.name = name
+  locals = arg
+  return arg
 
 #---------------------------------------------------------
 
 # 優先度低い順
-proc expr*(): Node
+proc program*(): Program
+proc stmt(): Node
+proc expr(): Node
+proc assign(): Node
 proc equality(): Node
 proc relational(): Node
 proc add(): Node
@@ -29,8 +66,39 @@ proc mul(): Node
 proc unary(): Node
 proc primary(): Node
 
-proc expr*(): Node =
-  var node: Node = equality()
+proc program*(): Program =
+  locals = nil
+
+  var head = new Node # ヒープにアロケート
+  head.next = nil
+  var cur = head # 参照のコピーだから中身は同じ
+
+  while not atEof():
+    cur.next = stmt()
+    cur = cur.next
+
+  var prog =  new Program
+  prog.node = head.next
+  prog.locals = locals
+  return prog
+
+proc stmt(): Node =
+  if consume("return"):
+    var node = newNode(NdReturn, expr())
+    expect(";")
+    return node
+
+  var node = newNode(NdExpr, expr())
+  expect(";")
+  return node
+
+proc expr(): Node =
+  return assign()
+
+proc assign(): Node =
+  var node = equality()
+  if consume("="):
+    node = newNode(NdAssign, node, assign()) # a=b=3とかしたいから，ここは右辺はasign()
   return node
 
 proc equality(): Node =
@@ -85,14 +153,23 @@ proc unary(): Node =
   if consume("+"):
     return primary()
   if consume("-"):
-    return newNode(NdSub, newNodeNum(0), unary()) # - - や - + などを許すために，ここはunary
+    return newNode(NdSub, newNode(0), unary()) # - - や - + などを許すために，ここはunary
 
   return primary()
 
 proc primary(): Node =
   if consume("("):
-    var node: Node = expr() # 再帰的に使うー
+    var node = expr() # 再帰的に使うー
     expect(")")
     return node
 
-  return newNodeNum(expectNumber())
+  var tok = consumeIdent() # Token, bool が返る（tuple?）
+  if tok[1]:
+    var tmpLvar = findLvar(tok[0]) # Lvar, bool
+    var lvar = tmpLvar[0]
+    if not tmpLvar[1]:
+      lvar = pushLvar(tok[0].str)
+    # node.offset = (int(tok[0].str[0]) - int('a') + 1)*8
+    return newNode(lvar)
+
+  return newNode(expectNumber())

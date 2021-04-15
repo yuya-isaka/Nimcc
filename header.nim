@@ -1,4 +1,3 @@
-
 import os
 import strutils
 import strformat
@@ -19,6 +18,7 @@ for i in commandLineParams()[0]:
 type
   TokenKind* = enum
     TkReserved,   # 記号
+    TkIdent,      # 識別子（変数）
     TkNum,        # 整数トークン
     TkEof         # 入力の終わりを表すトークン
 
@@ -34,6 +34,18 @@ type
 # *****現在着目しているトークン******
 var token*: Token
 # ***********************************
+
+#----------------------------------------------
+
+
+# ローカル変数の型，連結リスト
+type
+  Lvar* = ref object
+    next*: Lvar
+    name*: string
+    offset*: int
+
+
 
 #-----------------------------------------------------------
 
@@ -74,6 +86,14 @@ proc expectNumber*(): int =
 proc atEof*(): bool =
   return token.kind == TkEof
 
+proc consumeIdent*(): (Token, bool) =
+  if token.kind != TkIdent:
+    return (nil, false)
+  var tmpTok: Token = token
+  token = token.next
+  return (tmpTok, true)
+
+
 # ------------------------------------------------------------------------------------
 
 # ノードの種類（AST）
@@ -88,12 +108,27 @@ type
     NdNe,   # !=
     NdL,    # <
     NdLe,   # <=
+    NdAssign, # = 代入式
+    NdLvar,   # 変数
+    NdReturn,
+    NdExpr
 
 # ノード型
 type
   Node* = ref object
     kind*: NodeKind  # ノードの種類
+    next*: Node      # 次のノード
     lhs*: Node       # 左辺
     rhs*: Node       # 右辺
     val*: int        # kindがNdNumの場合の数値
+    arg*: Lvar       # kindがNdLvarの時
 
+
+var code*: seq[Node]
+
+type Program* = ref object
+  node*: Node
+  locals*: Lvar
+  stackSize*: int
+
+var program*: Program

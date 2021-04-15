@@ -6,7 +6,7 @@ import tokenize
 # メイン関数
 proc main() =
   token = tokenize() # グローバル変数にセット
-  var prog = program() # 副作用でグローバル変数codeにノードをストア
+  var prog = program()
 
   var offset = 0
   var lvar = prog.locals

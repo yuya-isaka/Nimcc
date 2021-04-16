@@ -1,8 +1,12 @@
+
 #[
-  目的：ノード連結リストと変数連結リストから「アセンブリ」を出力
+  * 目的：ノード連結リストと変数連結リストから「アセンブリ」を出力
 ]#
+
 import header
 import strformat
+
+#-----------------------------------------------------
 
 # 変数生成
 proc genAddr(node: Node) =
@@ -22,6 +26,8 @@ proc store() =
   echo "  pop rax"
   echo "  mov [rax], rdi"
   echo "  push rdi"
+
+#--------------------------------------------------------
 
 # コードジェネレート
 proc gen(node: Node) =
@@ -45,7 +51,7 @@ proc gen(node: Node) =
     return
   of NdReturn:
     gen(node.lhs)
-    echo "  pop rax"
+    echo "  pop rax"    # !これまでは毎回ポップしていたが，returnの時だけポップするので良い(複数のノードを生成しない)
     echo "  jmp .Lreturn"
     return
   else:
@@ -86,7 +92,9 @@ proc gen(node: Node) =
   else:
     discard
 
-  echo "  push rax"   # 式全体の結果を，スタックトップにプッシュ
+  echo "  push rax"   # !式全体の結果を，スタックトップにプッシュ
+
+#--------------------------------------------------------------------------
 
 # 完成形アセンブリ出力関数
 proc codegen*(prog: Program) =
@@ -99,7 +107,7 @@ proc codegen*(prog: Program) =
   echo "  mov rbp, rsp"
   echo fmt"  sub rsp, {prog.stackSize}"
 
-  # プログラムに入ってるノードが尽きるまでアセンブリ生成
+  # プログラムに入ってるノードが尽きるまでアセンブリ生成(連結リストだからこの書き方ができる)
   var node = prog.node
   while true:
     if node == nil:

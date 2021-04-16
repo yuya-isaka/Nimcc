@@ -1,11 +1,13 @@
+
 #[
-  目的：トークン列を先頭からパースし，「Node型の連結リスト」に変換
-  サブ目的：「Lvar型の連結リスト」を生成（変数用）
+  * 目的：トークン列を先頭からパースし，「Node型の連結リスト」に変換
+  * サブ目的：「Lvar型の連結リスト」を生成（変数用）
 ]#
+
 import header
 import strformat
 
-# ローカル変数（連結リスト）
+# !ローカル変数（連結リスト）
 var locals: Lvar
 
 #--------------------------------------------------------
@@ -58,7 +60,7 @@ proc findLvar(tok: Token): (Lvar, bool) =
     tmp = tmp.next
   return (tmp, false)
 
-#オーバーロード--------------------------------------------------------------
+#!オーバーロード--------------------------------------------------------------
 
 # 単純なノード生成(ノードの型)
 proc newNode(kind: NodeKind): Node =
@@ -94,7 +96,7 @@ proc newNode(arg: Lvar): Node =
 # ローカル変数の連結リストに追加
 proc pushLvar(name: string): Lvar =
   var arg = new Lvar
-  arg.next = locals # ローカル変数の連結リストだけ右から左に生やしてくスタイル
+  arg.next = locals # !ローカル変数の連結リストだけ右から左に生やしてくスタイル, headがいらない
   arg.name = name
   locals = arg
   return arg
@@ -117,10 +119,10 @@ proc primary(): Node
 proc program*(): Program =
   locals = nil # nilを設定
 
-  # 連結リスト作成
+  # Node用連結リスト作成
   var head = new Node # ヒープにアロケート
   head.next = nil
-  var cur = head # 参照のコピーだから中身は同じ
+  var cur = head # !参照のコピーだから中身は同じ
 
   # ノードを生成(連結リスト)
   while not atEof():
@@ -129,7 +131,7 @@ proc program*(): Program =
 
   # プログラム生成
   var prog =  new Program
-  prog.node = head.next
+  prog.node = head.next # !連結リストの先頭を取得
   prog.locals = locals
   return prog
 

@@ -1,6 +1,8 @@
+
 #[
-  目的：入力文字列を「Token型の連結リスト」に変換
+  * 目的：入力文字列を「Token型の連結リスト」に変換
 ]#
+
 import header
 import strutils
 
@@ -54,7 +56,7 @@ proc tokenize*(): Token =
       if len(input) > tmp1:
         tmpStr1.add($input[tmp1])
         inc(tmp1)
-    if tmpStr1 == "return" and not isAlnum($input[tmp1]):
+    if tmpStr1 == "return" and not isAlnum($input[tmp1]): # !returnxとかの記述を禁止する
       cur = newToken(TkReserved, cur, tmpStr1)
       idx += 6
       continue

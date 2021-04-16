@@ -52,7 +52,8 @@ assert 1 'return 1; 2; 3;'
 assert 2 '1; return 2; 3;'
 assert 3 '1; 2; return 3;'
 
-assert 3 'foo=3; return foo;'
-assert 8 'foo123=3; bar=5; return foo123+bar;'
+assert 3 'foo= 3; return foo;'
+assert 8 'foo123=3; bar=5; return foo123 + bar;'
+assert 3 ' return 3; bar=4; return bar;'
 
 echo OK

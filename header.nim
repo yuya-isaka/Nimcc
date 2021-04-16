@@ -77,7 +77,8 @@ type
     NdAssign, # = 代入式
     NdLvar,   # 変数
     NdReturn,
-    NdExpr
+    NdExpr,
+    NdIf,
 
 # ノード型
 type
@@ -88,6 +89,11 @@ type
     rhs*: Node       # 右辺
     val*: int        # kindがNdNumの場合の数値
     arg*: Lvar       # kindがNdLvarの時
+
+    # kindがNdIfの時
+    cond*: Node
+    then*: Node
+    els*: Node
 
 # プログラム型
 type Program* = ref object

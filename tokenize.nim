@@ -33,6 +33,38 @@ proc isAlpha(c: string): bool =
 proc isAlnum(c: string): bool =
   return isAlpha(c) or ("0" <= c and c <= "9")
 
+# 予約語をチェック
+proc checkReserved(cur: var Token): (string, bool) = # !tupleを返す
+
+    # "return", "if", "else"
+    var strList1 = ["return", "if", "else"] # !arrayになります
+    for tmp in strList1:
+      var tmpStr: string = $input[idx]
+      var tmpIdx: int = idx+1
+      for _ in 1..len(tmp)-1: # TODO間違えた箇所覚書
+        if len(input) > tmpIdx:
+          tmpStr.add($input[tmpIdx])
+          inc(tmpIdx)
+      if tmpStr == tmp and not isAlnum($input[tmpIdx]): # !returnxとかifxとかの記述を禁止する
+        return (tmpStr, true)
+
+    # こっちを先
+    var strList2 = ["==", "!=", "<=", ">="]
+    for tmp in strList2:
+      var tmpStr: string = $input[idx]
+      if len(input) > idx+1:
+        tmpStr.add($input[idx+1])
+      if tmpStr == tmp:
+        return (tmpStr, true)
+
+    # こっちを後
+    var strList3 = ['+', '-', '*', '/', '(', ')', '<', '>', ';', '=']
+    for tmp in strList3:
+      if input[idx] == tmp:
+        return ($input[idx], true)
+
+    return ("", false)
+
 #---------------------------------------------------------------------------------------
 
 # 入力文字列inputをトークナイズして返す
@@ -49,34 +81,10 @@ proc tokenize*(): Token =
       inc(idx)
       continue
 
-    # こっちを先("return")
-    var tmpStr1: string = $input[idx]
-    var tmp1: int = idx+1
-    for _ in 1..5:
-      if len(input) > tmp1:
-        tmpStr1.add($input[tmp1])
-        inc(tmp1)
-    if tmpStr1 == "return" and not isAlnum($input[tmp1]): # !returnxとかの記述を禁止する
-      cur = newToken(TkReserved, cur, tmpStr1)
-      idx += 6
-      continue
-
-    # こっちを先
-    var tmpStr2: string = $input[idx]
-    if len(input) > idx+1:
-      tmpStr2.add($input[idx+1])
-    if tmpStr2 == "==" or tmpStr2 == "!=" or tmpStr2 == "<=" or tmpStr2 == ">=":
-      cur = newToken(TkReserved, cur, tmpStr2)
-      idx += 2 # 2個インデックス進める
-      continue
-
-    # こっちを後
-    if input[idx] == '+' or input[idx] == '-' or input[idx] == '*' or
-      input[idx] == '/' or input[idx] == '(' or input[idx] == ')' or
-      input[idx] == '<' or input[idx] == '>' or input[idx] == ';' or
-      input[idx] == '=':
-      cur = newToken(TkReserved, cur, $input[idx])
-      inc(idx)
+    var tmpStr = checkReserved(cur) # !TkReservedに関するトークン作成はこの関数で!
+    if tmpStr[1]:
+      cur = newToken(TkReserved, cur, tmpStr[0])
+      idx += len(tmpStr[0]) # 読んだ文字列文インデックスを進める
       continue
 
     # 識別子，変数

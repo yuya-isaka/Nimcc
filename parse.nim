@@ -50,7 +50,7 @@ proc consumeIdent(): (Token, bool) =
   return (tmpTok, true)
 
 # 既に登録されている変数がチェック
-proc findLvar(tok: Token): (Lvar, bool) =
+proc findLvar(tok: Token): (Lvar, bool) = # !tupleを返す
   var tmp: Lvar = locals
   while true:
     if tmp == nil:
@@ -135,14 +135,30 @@ proc program*(): Program =
   prog.locals = locals
   return prog
 
-# "return" expr ";" | expr ";"
+#[
+  "return" expr ";" 
+  | "if" "(" expr ")" stmt ("else" stmt)?
+  | "while" "(" expr ")" stmt
+  | "for" "(" expr? ";" expr? ";" expr? ")" stmt
+  | expr ";"
+]# 
 proc stmt(): Node =
   if consume("return"):
     var node = newNode(NdReturn, expr())
     expect(";")
     return node
 
-  var node = newNode(NdExpr, expr())
+  if consume("if"):
+    var node = newNode(NdIf) # 左辺にノードを作るわけじゃないからnewNode(NdIf, expr())としない
+    expect("(")
+    node.cond = expr()    # !node型のcondメンバ変数に値を格納
+    expect(")")
+    node.then = stmt()
+    if consume("else"):
+      node.els = stmt()
+    return node
+
+  var node = newNode(NdExpr, expr()) # chibiccではここを関数にくくり出してたけど一旦やらない
   expect(";")
   return node
 

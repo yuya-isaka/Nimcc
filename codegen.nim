@@ -29,6 +29,10 @@ proc store() =
 
 #--------------------------------------------------------
 
+var labelseq: int # !0で初期化してくれる
+
+#-----------------------------------------------------
+
 # コードジェネレート
 proc gen(node: Node) =
 
@@ -48,6 +52,27 @@ proc gen(node: Node) =
     genAddr(node.lhs)
     gen(node.rhs)
     store()
+    return
+  of NdIf:
+    var seq = labelseq  # !ラベル数はユニークにする
+    inc(labelseq)
+    if node.els != nil:
+      gen(node.cond)
+      echo "  pop rax"
+      echo "  cmp rax, 0"
+      echo fmt"  je .Lelse{seq}"
+      gen(node.then)
+      echo fmt"  jmp .Lend{seq}"
+      echo fmt".Lelse{seq}:"  #TODO :を付け忘れた覚書
+      gen(node.els)
+      echo fmt".Lend{seq}:"
+    else:
+      gen(node.cond)
+      echo "  pop rax"
+      echo "  cmp rax, 0"
+      echo fmt"  je .Lend{seq}"
+      gen(node.then)
+      echo fmt".Lend{seq}:"
     return
   of NdReturn:
     gen(node.lhs)
@@ -100,7 +125,7 @@ proc gen(node: Node) =
 proc codegen*(prog: Program) =
   # 始まり
   echo ".intel_syntax noprefix"
-  echo ".global main"
+  echo ".global main" # macだと_mainで動く
   echo "main:"
 
   echo "  push rbp"

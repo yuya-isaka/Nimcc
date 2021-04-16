@@ -1,25 +1,28 @@
 import header
 import strformat
 
-#--------------------------------------------
-
+# 変数生成
 proc genAddr(node: Node) =
   if node.kind == NdLvar:
     echo fmt"  lea rax, [rbp-{node.arg.offset}]"
     echo "  push rax"
 
+# 関数フレーム，プロローグ
 proc load() =
   echo "  pop rax"
   echo "  mov rax, [rax]"
   echo "  push rax"
 
+# 関数フレーム，エピローグ
 proc store() =
   echo "  pop rdi"
   echo "  pop rax"
   echo "  mov [rax], rdi"
   echo "  push rdi"
 
+# コードジェネレート
 proc gen(node: Node) =
+
   case node.kind
   of NdNum:
     echo fmt"  push {node.val}"
@@ -82,7 +85,9 @@ proc gen(node: Node) =
 
   echo "  push rax"   # 式全体の結果を，スタックトップにプッシュ
 
+# 完成形アセンブリ出力関数
 proc codegen*(prog: Program) =
+  # 始まり
   echo ".intel_syntax noprefix"
   echo ".global main"
   echo "main:"
@@ -91,6 +96,7 @@ proc codegen*(prog: Program) =
   echo "  mov rbp, rsp"
   echo fmt"  sub rsp, {prog.stackSize}"
 
+  # プログラムに入ってるノードが尽きるまでアセンブリ生成
   var node = prog.node
   while true:
     if node == nil:
@@ -98,6 +104,7 @@ proc codegen*(prog: Program) =
     gen(node)
     node = node.next
 
+  # 終わり
   echo ".Lreturn:"
   echo "  mov rsp, rbp"
   echo "  pop rbp"

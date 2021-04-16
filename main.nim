@@ -5,11 +5,16 @@ import tokenize
 
 # メイン関数
 proc main() =
-  token = tokenize() # グローバル変数にセット
-  var prog = program()
 
+  # トークナイズ
+  token = tokenize() # グローバル変数tokenにセット
+
+  # パース
+  var prog: Program = program()
+
+  # オフセット計算
   var offset = 0
-  var lvar = prog.locals
+  var lvar: Lvar = prog.locals
   while true:
     if lvar == nil:
       break
@@ -18,9 +23,11 @@ proc main() =
     lvar = lvar.next
   prog.stackSize = offset
 
+  # アセンブリ生成
   codegen(prog)
 
   quit(0)
 
+#---------------------------------------------------------
 
 main()

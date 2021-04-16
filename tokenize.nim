@@ -20,19 +20,26 @@ proc newToken(kind: TokenKind, cur: Token, str: string): Token =
   cur.next = tok
   return tok
 
+# アルファベットチェック
 proc isAlpha(c: string): bool =
   return ("a" <= c and c <= "z") or ("A" <= c and c <= "Z") or c == "_"
 
+# アルファベットと数値チェック
 proc isAlnum(c: string): bool =
   return isAlpha(c) or ("0" <= c and c <= "9")
 
+#---------------------------------------------------------------------------------------
+
 # 入力文字列inputをトークナイズして返す
 proc tokenize*(): Token =
+  # 連結リスト作成
   var head: Token = new Token   # 参照型のオブジェクト生成（ヒープ領域に確保）
   head.next = nil
   var cur = head    # 参照のコピーなので，実体は同じもの
 
   while len(input) > idx:
+
+    # 空白飛ばし
     if isSpaceAscii(input[idx]):
       inc(idx)
       continue
@@ -77,6 +84,7 @@ proc tokenize*(): Token =
       cur = newToken(TkIdent, cur, tmpStr)
       continue
 
+    # 数値
     if isDigit(input[idx]):
       var str: string = checkNum()
       cur = newToken(TkNum, cur, $input[idx])

@@ -1,8 +1,6 @@
 import os
 import strutils
 
-#-------------------------------------------------------
-
 # 入力文字列準備
 var idx* = 0
 var input*: seq[char]
@@ -30,25 +28,21 @@ type
     str*: string       # トークン文字列
     at*: int           # 入力文字配列のうち，どこを指しているか（先頭インデックス）
 
-# *****現在着目しているトークン******
+# 現在着目しているトークン
 var token*: Token
-# ***********************************
 
-#----------------------------------------------
+#----------------------------------------------------------
 
-
-# ローカル変数の型，連結リスト
+# ローカル変数の型(連結リスト)
 type
   Lvar* = ref object
     next*: Lvar
     name*: string
     offset*: int
 
-
-
 #-----------------------------------------------------------
 
-# エラー表示関数
+# エラー表示関数(今微妙に使い勝手が悪い．ので後々書き換える)
 proc errorAt*(errorMsg: string) =
   var tmp: string
   for i in input:
@@ -60,7 +54,6 @@ proc errorAt*(errorMsg: string) =
     echo " ".repeat(token.at) & "^"
   echo idx
   quit(errorMsg)
-
 
 # ------------------------------------------------------------------------------------
 
@@ -91,12 +84,10 @@ type
     val*: int        # kindがNdNumの場合の数値
     arg*: Lvar       # kindがNdLvarの時
 
-
-var code*: seq[Node]
-
+# プログラム型
 type Program* = ref object
-  node*: Node
-  locals*: Lvar
-  stackSize*: int
+  node*: Node       # ノード
+  locals*: Lvar     # 付随するローカル変数
+  stackSize*: int   # ローカル変数に用いたスタックサイズ
 
 var program*: Program

@@ -1,3 +1,6 @@
+#[
+  目的：入力文字列を「Token型の連結リスト」に変換
+]#
 import header
 import strutils
 

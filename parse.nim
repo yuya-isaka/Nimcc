@@ -1,3 +1,7 @@
+#[
+  目的：トークン列を先頭からパースし，「Node型の連結リスト」に変換
+  サブ目的：「Lvar型の連結リスト」を生成（変数用）
+]#
 import header
 import strformat
 

@@ -1,3 +1,6 @@
+#[
+  目的：ノード連結リストと変数連結リストから「アセンブリ」を出力
+]#
 import header
 import strformat
 

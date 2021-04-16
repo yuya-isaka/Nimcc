@@ -232,18 +232,18 @@ proc unary(): Node =
     return primary()
 
   if consume("-"):
-    return newNode(NdSub, newNode(0), unary()) # - - や - + などを許すために，ここはunary
+    return newNode(NdSub, newNode(0), unary()) # !- - や - + などを許すために，ここはunary
 
   return primary()
 
 #  "(" expr ")" | ident | num |
 proc primary(): Node =
   if consume("("):
-    var node = expr() # 再帰的に使うー
+    var node = expr() # 再帰的に使う
     expect(")")
     return node
 
-  var tok = consumeIdent() # Token, bool が返る（tuple?）
+  var tok = consumeIdent() # Token, bool が返る（tuple）
   if tok[1]:
     var tmpLvar = findLvar(tok[0]) # Lvar, bool
     var lvar = tmpLvar[0]

@@ -75,7 +75,7 @@ proc newNode(kind: NodeKind, lhs: Node, rhs: Node): Node =
   node.rhs = rhs
   return node
 
-# 単項演算子のノード(ノードの型，左辺ノード)
+# 現在は，NdReturnとNdExpr用のノード（;で終わるものを扱う，左辺だけのノード）(ノードの型，左辺ノード)
 proc newNode(kind: NodeKind, lhs: Node): Node =
   var node: Node = newNode(kind)
   node.lhs = lhs
@@ -153,12 +153,12 @@ proc stmt(): Node =
     expect("(")
     node.cond = expr()    # !node型のcondメンバ変数に値を格納
     expect(")")
-    node.then = stmt()
+    node.then = stmt()    # !ifの中でifを使ってもいい
     if consume("else"):
       node.els = stmt()
     return node
 
-  var node = newNode(NdExpr, expr()) # chibiccではここを関数にくくり出してたけど一旦やらない
+  var node = newNode(NdExpr, expr()) ## chibiccではここを関数にくくり出してたけど一旦やらない
   expect(";")
   return node
 

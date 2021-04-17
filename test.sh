@@ -65,5 +65,7 @@ assert 2 'if (2-1) return 2; return 3;'
 
 assert 5 'a = 3; if(a) return 5; else return 4;'
 assert 3 'a=0; if (a) return 5; else return 3;'
+assert 3 'a=2; if (a==3) return 0; else if (a==2) return 3; else return 6;'
+assert 3 'a=3; return a;'
 
 echo OK

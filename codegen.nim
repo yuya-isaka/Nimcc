@@ -25,7 +25,7 @@ proc store() =
   echo "  pop rdi"
   echo "  pop rax"
   echo "  mov [rax], rdi"
-  echo "  push rdi"
+  echo "  push rdi"     # !NdAssignはNdExprにラップされてるから，ここでpushしたものは，add rsp, 8で抜き取られる(ちゃんと取り除ける)
 
 #--------------------------------------------------------
 
@@ -40,9 +40,9 @@ proc gen(node: Node) =
   of NdNum:
     echo fmt"  push {node.val}"
     return
-  of NdExpr:
+  of NdExpr:    # !意味のない式，数値対策？ 3;みたいな
     gen(node.lhs)
-    echo "  add rsp, 8"
+    echo "  add rsp, 8"   # !pop raxをする代わり？ スタックポインタを上に8あげればpopしたのと同じ.
     return
   of NdLvar:
     genAddr(node)
@@ -54,7 +54,7 @@ proc gen(node: Node) =
     store()
     return
   of NdIf:
-    var seq = labelseq  # !ラベル数はユニークにする
+    var seq = labelseq  # !ラベル番号はユニークにする
     inc(labelseq)
     if node.els != nil:
       gen(node.cond)
@@ -82,8 +82,8 @@ proc gen(node: Node) =
   else:
     discard
 
-  gen(node.lhs)
-  gen(node.rhs)
+  gen(node.lhs)   # !これより下のNode型は，2つの値を使用する計算だから，まとめて上でgen(node.lhs),gen(node.rhs)している
+  gen(node.rhs)   # !case文の各Node型の中で実行しても良い
 
   echo "  pop rdi"
   echo "  pop rax"

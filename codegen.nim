@@ -103,6 +103,11 @@ proc gen(node: Node) =
     echo fmt"   jmp .Lbegin{seq}"
     echo fmt".Lend{seq}:"
     return
+  of NdBlock:
+    for tmp in node.body:
+      gen(tmp)
+      # echo "  pop rax" # 多分readExprStmtのおかげでいらなくなった（便利です）
+    return
   of NdReturn:
     gen(node.lhs)
     echo "  pop rax"    # !これまでは毎回ポップしていたが，returnの時だけポップするので良い(複数のノードを生成しない)

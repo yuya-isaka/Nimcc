@@ -143,6 +143,7 @@ proc readExprStmt(): Node =
   | "if" "(" expr ")" stmt ("else" stmt)?
   | "while" "(" expr ")" stmt
   | "for" "(" expr? ";" expr? ";" expr? ")" stmt
+  | "{" stmt* "}"
   | expr ";"
 ]# 
 proc stmt(): Node =
@@ -182,6 +183,12 @@ proc stmt(): Node =
       node.inc = readExprStmt()
       expect(")")
     node.then = stmt()
+    return node
+
+  if consume("{"):
+    var node = newNode(NdBlock)
+    while not consume("}"):
+      node.body.add(stmt())
     return node
 
   var node = readExprStmt() #   関数でくくり出した

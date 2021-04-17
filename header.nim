@@ -81,6 +81,7 @@ type
     NdIf,
     NdWhile,
     NdFor,
+    NdBlock
 
 # ノード型
 type
@@ -99,6 +100,9 @@ type
     # kindがNdForの時
     init*: Node
     inc*: Node
+
+    #kindがNdBlockの時
+    body*: seq[Node]
 
 
 # プログラム型

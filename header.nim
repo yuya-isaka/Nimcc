@@ -79,6 +79,7 @@ type
     NdReturn,
     NdExpr,
     NdIf,
+    NdWhile,
 
 # ノード型
 type
@@ -90,7 +91,7 @@ type
     val*: int        # kindがNdNumの場合の数値
     arg*: Lvar       # kindがNdLvarの時
 
-    # kindがNdIfの時
+    # kindがNdIf,NdWhileの時
     cond*: Node
     then*: Node
     els*: Node

@@ -158,6 +158,14 @@ proc stmt(): Node =
       node.els = stmt()
     return node
 
+  if consume("while"):
+    var node = newNode(NdWhile)
+    expect("(")
+    node.cond = expr()
+    expect(")")
+    node.then = stmt()
+    return node
+
   var node = newNode(NdExpr, expr()) ## chibiccではここを関数にくくり出してたけど一旦やらない
   expect(";")
   return node

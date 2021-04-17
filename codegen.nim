@@ -29,7 +29,7 @@ proc store() =
 
 #--------------------------------------------------------
 
-var labelseq: int # !0で初期化してくれる
+var labelSeq: int # !0で初期化してくれる
 
 #-----------------------------------------------------
 
@@ -54,8 +54,8 @@ proc gen(node: Node) =
     store()
     return
   of NdIf:
-    var seq = labelseq  # !ラベル番号はユニークにする
-    inc(labelseq)
+    var seq = labelSeq  # !ラベル番号はユニークにする
+    inc(labelSeq)
     if node.els != nil:
       gen(node.cond)
       echo "  pop rax"
@@ -73,6 +73,18 @@ proc gen(node: Node) =
       echo fmt"  je .Lend{seq}"
       gen(node.then)
       echo fmt".Lend{seq}:"
+    return
+  of NdWhile:
+    var seq = labelSeq
+    inc(labelSeq)
+    echo fmt".Lbegin{seq}:"
+    gen(node.cond)
+    echo "  pop rax"
+    echo "  cmp rax, 0"
+    echo fmt"   je .Lend{seq}"
+    gen(node.then)
+    echo fmt"   jmp .Lbegin{seq}"
+    echo fmt".Lend{seq}:"
     return
   of NdReturn:
     gen(node.lhs)

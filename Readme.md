@@ -152,4 +152,5 @@
 ### 10. return文
 
 ## License
-MIT
+Copyright 2021 Yuya Isaka under the terms of the MIT license
+found at http://www.opensource.org/licenses/mit-license.html

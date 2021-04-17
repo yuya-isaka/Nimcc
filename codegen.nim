@@ -25,7 +25,7 @@ proc store() =
   echo "  pop rdi"
   echo "  pop rax"
   echo "  mov [rax], rdi"
-  echo "  push rdi"     # !NdAssignはNdExprにラップされてるから，ここでpushしたものは，add rsp, 8で抜き取られる(ちゃんと取り除ける)
+  echo "  push rdi"     # !NdAssignはNdExprStmtにラップされてるから，ここでpushしたものは，add rsp, 8で抜き取られる(ちゃんと取り除ける)
 
 #--------------------------------------------------------
 
@@ -40,7 +40,7 @@ proc gen(node: Node) =
   of NdNum:
     echo fmt"  push {node.val}"
     return
-  of NdExpr:    # !意味のない式，数値対策？ 3;みたいな
+  of NdExprStmt:    # !意味のない式，数値対策？ 3;みたいな
     gen(node.lhs)
     echo "  add rsp, 8"   # !pop raxをする代わり？ スタックポインタを上に8あげればpopしたのと同じ.
     return
@@ -83,6 +83,23 @@ proc gen(node: Node) =
     echo "  cmp rax, 0"
     echo fmt"   je .Lend{seq}"
     gen(node.then)
+    echo fmt"   jmp .Lbegin{seq}"
+    echo fmt".Lend{seq}:"
+    return    # TODO return忘れてた覚書
+  of NdFor:
+    var seq = labelSeq
+    inc(labelSeq)
+    if node.init != nil:
+      gen(node.init)
+    echo fmt".Lbegin{seq}:"
+    if node.cond != nil:
+      gen(node.cond)
+      echo "  pop rax"
+      echo "  cmp rax, 0"
+      echo fmt"   je .Lend{seq}"
+    gen(node.then)
+    if node.inc != nil:
+      gen(node.inc)
     echo fmt"   jmp .Lbegin{seq}"
     echo fmt".Lend{seq}:"
     return

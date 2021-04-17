@@ -37,7 +37,7 @@ proc isAlnum(c: string): bool =
 proc checkReserved(cur: var Token): (string, bool) = # !tupleを返す
 
     # "return", "if", "else"
-    var strList1 = ["return", "if", "else", "while"] # !arrayになります
+    var strList1 = ["return", "if", "else", "while", "for"] # !arrayになります
     for tmp in strList1:
       var tmpStr: string = $input[idx]
       var tmpIdx: int = idx+1

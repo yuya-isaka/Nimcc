@@ -77,9 +77,10 @@ type
     NdAssign, # = 代入式
     NdLvar,   # 変数
     NdReturn,
-    NdExpr,
+    NdExprStmt,
     NdIf,
     NdWhile,
+    NdFor,
 
 # ノード型
 type
@@ -95,6 +96,10 @@ type
     cond*: Node
     then*: Node
     els*: Node
+    # kindがNdForの時
+    init*: Node
+    inc*: Node
+
 
 # プログラム型
 type Program* = ref object

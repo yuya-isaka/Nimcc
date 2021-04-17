@@ -70,4 +70,4 @@
 
 - 全てをノードとして扱う方が効率がいい（NdExpr)
 
-- storeのpush rdiとgenのNdExprのadd rsp, 8の両方を消してもテスト通った．
+- storeのpush rdiとgenのNdExprStmtのadd rsp, 8の両方を消してもテスト通った．

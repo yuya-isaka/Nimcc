@@ -75,7 +75,7 @@ proc newNode(kind: NodeKind, lhs: Node, rhs: Node): Node =
   node.rhs = rhs
   return node
 
-# 現在は，NdReturnとNdExpr用のノード（;で終わるものを扱う，左辺だけのノード）(ノードの型，左辺ノード)
+# 現在は，NdReturnとNdExprStmt用のノード（;で終わるものを扱う，左辺だけのノード）(ノードの型，左辺ノード)
 proc newNode(kind: NodeKind, lhs: Node): Node =
   var node: Node = newNode(kind)
   node.lhs = lhs
@@ -135,6 +135,9 @@ proc program*(): Program =
   prog.locals = locals
   return prog
 
+proc readExprStmt(): Node =
+  return newNode(NdExprStmt, expr())
+
 #[
   "return" expr ";" 
   | "if" "(" expr ")" stmt ("else" stmt)?
@@ -166,7 +169,22 @@ proc stmt(): Node =
     node.then = stmt()
     return node
 
-  var node = newNode(NdExpr, expr()) ## chibiccではここを関数にくくり出してたけど一旦やらない
+  if consume("for"):
+    var node = newNode(NdFor)
+    expect("(")
+    if not consume(";"):
+      node.init = readExprStmt()    # !readExprStmtでラップしないと，スタックに不要な値が残ってしまう
+      expect(";")
+    if not consume(";"):
+      node.cond = expr()    # !node.condはcodegen内で，pop raxする予定があるから，readExprStmtでラップするのはだめ
+      expect(";")
+    if not consume(")"):
+      node.inc = readExprStmt()
+      expect(")")
+    node.then = stmt()
+    return node
+
+  var node = readExprStmt() #   関数でくくり出した
   expect(";")
   return node
 

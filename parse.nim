@@ -36,6 +36,14 @@ proc expectNumber(): int =
   token = token.next
   return val
 
+proc expectIdent(): string =
+  if token.kind != TkIdent:
+    errorAt("識別子ではありません")
+
+  var val = token.str
+  token = token.next
+  return val
+
 # 終端チェック
 proc atEof(): bool =
   return token.kind == TkEof
@@ -49,16 +57,27 @@ proc consumeIdent(): (Token, bool) =
   token = token.next
   return (tmpTok, true)
 
+#-----------------------------------------------------------------------
+
 # 既に登録されている変数がチェック
 proc findLvar(tok: Token): (Lvar, bool) = # !tupleを返す
-  var tmp: Lvar = locals
+  var vl: Lvar = locals
   while true:
-    if tmp == nil:
+    if vl == nil:
       break
-    if tmp.name == tok.str:
-      return (tmp, true)
-    tmp = tmp.next
-  return (tmp, false)
+    if vl.name == tok.str:
+      return (vl, true)
+    vl = vl.next
+  return (vl, false)
+
+# ローカル変数の連結リストに追加
+proc pushLvar(name: string): Lvar =
+  var lvar = new Lvar
+  lvar.next = locals
+  lvar.name = name
+  locals = lvar
+
+  return lvar
 
 #!オーバーロード--------------------------------------------------------------
 
@@ -93,18 +112,11 @@ proc newNode(arg: Lvar): Node =
   node.arg = arg
   return node
 
-# ローカル変数の連結リストに追加
-proc pushLvar(name: string): Lvar =
-  var arg = new Lvar
-  arg.next = locals # !ローカル変数の連結リストだけ右から左に生やしてくスタイル, headがいらない
-  arg.name = name
-  locals = arg
-  return arg
-
 #---------------------------------------------------------------------------
 
 # 優先度低い順
-proc program*(): Program
+proc program*(): Function
+proc function(): Function
 proc stmt(): Node
 proc expr(): Node
 proc assign(): Node
@@ -115,9 +127,44 @@ proc mul(): Node
 proc unary(): Node
 proc primary(): Node
 
-# stmt*
-proc program*(): Program =
+# function*
+proc program*(): Function =
+  var head = new Function
+  head.next = nil
+  var cur: Function = head
+
+  while not atEof():
+    cur.next = function()
+    cur = cur.next
+  
+  return head.next
+
+# proc readFuncParams(): LvarList =
+#   if consume(")"):
+#     return nil
+
+#   var head = new LvarList
+#   head.lvar = pushLvar(expectIdent())
+#   var cur = head
+
+#   while not consume(")"):
+#     expect(",")
+#     cur.next = new LvarList
+#     cur.next.lvar = pushLvar(expectIdent())
+#     cur = cur.next
+
+#   return head
+
+# ident "(" params? ")" "{" stmt* "}"
+# params = ident ("," ident)*
+proc function(): Function =
   locals = nil # nilを設定
+
+  var name = expectIdent()
+
+  expect("(")
+  expect(")")
+  expect("{")
 
   # Node用連結リスト作成
   var head = new Node # ヒープにアロケート
@@ -125,15 +172,16 @@ proc program*(): Program =
   var cur = head # !参照のコピーだから中身は同じ
 
   # ノードを生成(連結リスト)
-  while not atEof():
+  while not consume("}"):
     cur.next = stmt()
     cur = cur.next
 
   # プログラム生成
-  var prog =  new Program
-  prog.node = head.next # !連結リストの先頭を取得
-  prog.locals = locals
-  return prog
+  var fn = new Function
+  fn.name = name
+  fn.node = head.next # !連結リストの先頭を取得
+  fn.locals = locals
+  return fn
 
 proc readExprStmt(): Node =
   return newNode(NdExprStmt, expr())
@@ -269,7 +317,20 @@ proc unary(): Node =
 
   return primary()
 
-#  "(" expr ")" | ident | num |
+# "(" (assign ("," assign)*)? ")"
+proc funcArgs(): Node =
+  if consume(")"):
+    return nil
+  
+  var head = assign()
+  var cur = head
+  while consume(","):
+    cur.next = assign()
+    cur = cur.next
+  expect(")")
+  return head
+
+#  "(" expr ")" | ident func-args? | num |
 proc primary(): Node =
   if consume("("):
     var node = expr() # 再帰的に使う
@@ -278,10 +339,15 @@ proc primary(): Node =
 
   var tok = consumeIdent() # Token, bool が返る（tuple）
   if tok[1]:
-    var tmpLvar = findLvar(tok[0]) # Lvar, bool
-    var lvar = tmpLvar[0]
+    if consume("("):
+      var node = newNode(NdFuncall)
+      var val = tok[0].str
+      node.funcname = val
+      node.args = funcArgs()
+      return node
+    var tmpLvar = findLvar(tok[0]) # LvarList, bool
     if not tmpLvar[1]:
-      lvar = pushLvar(tok[0].str)
-    return newNode(lvar)
+      tmpLvar[0] = pushLvar(tok[0].str)
+    return newNode(tmpLvar[0])
 
   return newNode(expectNumber())

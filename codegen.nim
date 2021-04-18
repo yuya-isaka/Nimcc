@@ -30,6 +30,8 @@ proc store() =
 #--------------------------------------------------------
 
 var labelSeq: int # !0で初期化してくれる
+var funcname: string
+var argreg = ["rdi", "rsi", "rdx", "rcx", "r8", "r9"]
 
 #-----------------------------------------------------
 
@@ -108,10 +110,39 @@ proc gen(node: Node) =
       gen(tmp)
       # echo "  pop rax" # 多分readExprStmtのおかげでいらなくなった（便利です）
     return
+  of NdFuncall:
+    var nargs = 0
+    var arg = node.args
+    while arg != nil:
+      gen(arg)
+      inc(nargs)
+      arg = arg.next
+
+    var i = nargs - 1
+    while i >= 0:
+      echo fmt"  pop {argreg[i]}"
+      dec(i)
+
+    var seq = labelSeq
+    inc(labelSeq)
+    echo "  mov rax, rsp"
+    echo "  and rax, 15"
+    echo fmt"  jnz .Lcall{seq}"
+    echo "  mov rax, 0"
+    echo fmt"  call {node.funcname}"
+    echo fmt"  jmp .Lend{seq}"
+    echo fmt".Lcall{seq}:"
+    echo "  sub rsp, 8"
+    echo "  mov rax, 0"
+    echo fmt"  call {node.funcname}"
+    echo "  add rsp, 8"
+    echo fmt".Lend{seq}:"
+    echo "  push rax"
+    return
   of NdReturn:
     gen(node.lhs)
     echo "  pop rax"    # !これまでは毎回ポップしていたが，returnの時だけポップするので良い(複数のノードを生成しない)
-    echo "  jmp .Lreturn"
+    echo fmt"  jmp .Lreturn.{funcname}"
     return
   else:
     discard
@@ -156,26 +187,32 @@ proc gen(node: Node) =
 #--------------------------------------------------------------------------
 
 # 完成形アセンブリ出力関数
-proc codegen*(prog: Program) =
+proc codegen*(prog: Function) =
   # 始まり
   echo ".intel_syntax noprefix"
-  echo ".global main" # macだと_mainで動く
-  echo "main:"
 
-  echo "  push rbp"
-  echo "  mov rbp, rsp"
-  echo fmt"  sub rsp, {prog.stackSize}"
+  var fn = prog
+  while fn != nil:
+    echo fmt".global {fn.name}" # macだと_mainで動く
+    echo fmt"{fn.name}:"
+    funcname = fn.name
 
-  # プログラムに入ってるノードが尽きるまでアセンブリ生成(連結リストだからこの書き方ができる)
-  var node = prog.node
-  while true:
-    if node == nil:
-      break
-    gen(node)
-    node = node.next
+    echo "  push rbp"
+    echo "  mov rbp, rsp"
+    echo fmt"  sub rsp, {fn.stackSize}"
 
-  # 終わり
-  echo ".Lreturn:"
-  echo "  mov rsp, rbp"
-  echo "  pop rbp"
-  echo "  ret"
+    # プログラムに入ってるノードが尽きるまでアセンブリ生成(連結リストだからこの書き方ができる)
+    var node = fn.node
+    while true:
+      if node == nil:
+        break
+      gen(node)
+      node = node.next
+
+    # 終わり
+    echo fmt".Lreturn.{funcname}:"
+    echo "  mov rsp, rbp"
+    echo "  pop rbp"
+    echo "  ret"
+
+    fn = fn.next

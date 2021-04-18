@@ -81,7 +81,8 @@ type
     NdIf,
     NdWhile,
     NdFor,
-    NdBlock
+    NdBlock,
+    NdFuncall
 
 # ノード型
 type
@@ -104,11 +105,17 @@ type
     #kindがNdBlockの時
     body*: seq[Node]
 
+    #kindがNdFuncallの時
+    funcname*: string
+    args*: Node
 
-# プログラム型
-type Program* = ref object
+
+# 関数ごとに管理
+type Function* = ref object
+  next*: Function
+  name*: string
   node*: Node       # !複数ノード連結リストの先頭
   locals*: Lvar     # !ローカル変数連結リストの先頭
   stackSize*: int   # ローカル変数に用いたスタックサイズ
 
-var program*: Program
+var program*: Function

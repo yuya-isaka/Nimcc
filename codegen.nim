@@ -211,9 +211,7 @@ proc codegen*(prog: Function) =
 
     # プログラムに入ってるノードが尽きるまでアセンブリ生成(連結リストだからこの書き方ができる)
     var node = fn.node
-    while true:
-      if node == nil:
-        break
+    while node != nil:
       gen(node)
       node = node.next
 

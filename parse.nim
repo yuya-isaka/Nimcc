@@ -51,7 +51,7 @@ proc atEof(): bool =
 # 変数チェック
 proc consumeIdent(): (Token, bool) =
   if token.kind != TkIdent:
-    return (nil, false)
+    return (nil, false)   # !よくみたらここでnil返してるやんけ!!!
 
   var tmpTok: Token = token
   token = token.next
@@ -60,14 +60,14 @@ proc consumeIdent(): (Token, bool) =
 #-----------------------------------------------------------------------
 
 # 既に登録されている変数がチェック
-proc findLvar(tok: Token): (Lvar, bool) = # !tupleを返す
+proc findLvar(tok: Token): (Lvar, bool) = # !tupleを返す(この設計は直さないといけん)
   var vl: LvarList = locals
   while vl != nil:
     var lvar = vl.lvar
     if lvar.name == tok.str:
       return (lvar, true)
     vl = vl.next
-  return (nil, false)
+  return (nil, false)   # !一度バグって何も動かなくなった．ここでnilを返すように変更したのが良かった．（初期化されていないオブジェクトを返そうとしていた？）
 
 # ローカル変数の連結リストに追加
 proc pushLvar(name: string): Lvar =

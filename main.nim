@@ -18,9 +18,7 @@ proc main() =
   var prog: Function = program()
   # オフセット計算
   var fn: Function = prog
-  while true:   # !Functionループ
-    if fn == nil:
-      break
+  while fn != nil:   # !Functionループ
 
     var offset = 0
     var vl: LvarList = fn.locals

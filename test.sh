@@ -71,9 +71,10 @@ assert 55 'main() { i=0; j=0; while(i<=10) {j=i+j; i=i+1;} return j; }'
 assert 55 'main() { i=0; j=0; for (i=0; i<=10; i=i+1) j=i+j; return j; }'
 assert 3 'main() { for (;;) return 3; return 5; }'
 
-# assert 7 'main() { return add2(3,4); } add2(x,y) { return x+y; }'
-# assert 1 'main() { return sub2(4,3); } sub2(x,y) { return x-y; }'
-# assert 55 'main() { return fib(9); } fib(x) { if (x<=1) return 1; return fib(x-1) + fib(x-2); }'
+assert 7 'main() { return add2(3,4); } add2(x,y) { return x+y; }'
+assert 1 'main() { return sub2(4,3); } sub2(x,y) { return x-y; }'
+assert 55 'main() { return fib(9); } fib(x) { if (x<=1) return 1; return fib(x-1) + fib(x-2); }'
+assert 5 'main() { return tmp(2,3); } add(x,y) { return x + y; } tmp(x,y) { return add(x,y); }'
 
 
 echo OK

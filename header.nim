@@ -41,9 +41,13 @@ var token*: Token
 # ローカル変数の型(連結リスト)
 type
   Lvar* = ref object
-    next*: Lvar
     name*: string
     offset*: int
+
+type
+  LvarList* = ref object
+    next*: LvarList
+    lvar*: Lvar
 
 #-----------------------------------------------------------
 
@@ -114,8 +118,9 @@ type
 type Function* = ref object
   next*: Function
   name*: string
+  params*: LvarList
   node*: Node       # !複数ノード連結リストの先頭
-  locals*: Lvar     # !ローカル変数連結リストの先頭
+  locals*: LvarList     # !ローカル変数連結リストの先頭
   stackSize*: int   # ローカル変数に用いたスタックサイズ
 
 var program*: Function

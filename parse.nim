@@ -8,7 +8,7 @@ import header
 import strformat
 
 # !ローカル変数（連結リスト）
-var locals: Lvar
+var locals: LvarList
 
 #--------------------------------------------------------
 
@@ -61,22 +61,23 @@ proc consumeIdent(): (Token, bool) =
 
 # 既に登録されている変数がチェック
 proc findLvar(tok: Token): (Lvar, bool) = # !tupleを返す
-  var vl: Lvar = locals
-  while true:
-    if vl == nil:
-      break
-    if vl.name == tok.str:
-      return (vl, true)
+  var vl: LvarList = locals
+  while vl != nil:
+    var lvar = vl.lvar
+    if lvar.name == tok.str:
+      return (lvar, true)
     vl = vl.next
-  return (vl, false)
+  return (nil, false)
 
 # ローカル変数の連結リストに追加
 proc pushLvar(name: string): Lvar =
   var lvar = new Lvar
-  lvar.next = locals
   lvar.name = name
-  locals = lvar
 
+  var vl = new LvarList
+  vl.lvar = lvar
+  vl.next = locals
+  locals = vl
   return lvar
 
 #!オーバーロード--------------------------------------------------------------
@@ -139,31 +140,32 @@ proc program*(): Function =
   
   return head.next
 
-# proc readFuncParams(): LvarList =
-#   if consume(")"):
-#     return nil
+proc readFuncParams(): LvarList =
+  if consume(")"):
+    return nil
 
-#   var head = new LvarList
-#   head.lvar = pushLvar(expectIdent())
-#   var cur = head
+  var head = new LvarList
+  head.lvar = pushLvar(expectIdent())
+  var cur = head
 
-#   while not consume(")"):
-#     expect(",")
-#     cur.next = new LvarList
-#     cur.next.lvar = pushLvar(expectIdent())
-#     cur = cur.next
+  while not consume(")"):
+    expect(",")
+    cur.next = new LvarList
+    cur.next.lvar = pushLvar(expectIdent())
+    cur = cur.next
 
-#   return head
+  return head
 
 # ident "(" params? ")" "{" stmt* "}"
 # params = ident ("," ident)*
 proc function(): Function =
   locals = nil # nilを設定
 
-  var name = expectIdent()
+  var fn = new Function
+  fn.name = expectIdent()
 
   expect("(")
-  expect(")")
+  fn.params = readFuncParams()
   expect("{")
 
   # Node用連結リスト作成
@@ -177,8 +179,6 @@ proc function(): Function =
     cur = cur.next
 
   # プログラム生成
-  var fn = new Function
-  fn.name = name
   fn.node = head.next # !連結リストの先頭を取得
   fn.locals = locals
   return fn

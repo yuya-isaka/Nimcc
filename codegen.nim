@@ -201,6 +201,14 @@ proc codegen*(prog: Function) =
     echo "  mov rbp, rsp"
     echo fmt"  sub rsp, {fn.stackSize}"
 
+    var i = 0
+    var vl = fn.params
+    while vl != nil:
+      var lvar = vl.lvar
+      echo fmt"  mov [rbp-{lvar.offset}], {argreg[i]}"
+      inc(i)
+      vl = vl.next
+
     # プログラムに入ってるノードが尽きるまでアセンブリ生成(連結リストだからこの書き方ができる)
     var node = fn.node
     while true:

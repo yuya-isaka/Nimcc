@@ -23,13 +23,11 @@ proc main() =
       break
 
     var offset = 0
-    var lvar: Lvar = prog.locals
-    while true:   # !ローカル変数ループ
-      if lvar == nil:
-        break
+    var vl: LvarList = fn.locals
+    while vl != nil:   # !ローカル変数ループ
       offset += 8
-      lvar.offset = offset
-      lvar = lvar.next
+      vl.lvar.offset = offset
+      vl = vl.next
 
     fn.stackSize = offset
     fn = fn.next

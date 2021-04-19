@@ -81,7 +81,7 @@ proc tokenize*(): Token =
       inc(idx)
       continue
 
-    # 予約語
+    # 予約語(こいつは先に)
     var tmpStr = checkReserved(cur) # !TkReservedに関するトークン作成はこの関数で!
     if tmpStr[1]:
       cur = newToken(TkReserved, cur, tmpStr[0])

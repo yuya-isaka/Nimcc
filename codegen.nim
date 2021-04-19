@@ -11,7 +11,8 @@ import strformat
 # 変数生成
 proc genAddr(node: Node) =
   if node.kind == NdLvar:
-    echo fmt"  lea rax, [rbp-{node.arg.offset}]"
+    echo fmt"  lea rax, [rbp-{node.arg.offset}]"  #! アドレス計算を行うが，メモリアクセスは行わず，アドレス計算の結果そのものをraxに代入
+    #! raxにはアドレスが入ってる
     echo "  push rax"
 
 # 関数フレーム，プロローグ
@@ -31,7 +32,8 @@ proc store() =
 
 var labelSeq: int # !0で初期化してくれる
 var funcname: string
-var argreg = ["rdi", "rsi", "rdx", "rcx", "r8", "r9"]
+#! 引数は6つ
+var argreg = ["rdi", "rsi", "rdx", "rcx", "r8", "r9"] #! 関数の引数の順番． x86-64, ABI仕様で決められている．　このルールに従わないと適切な機械語を生成できない
 
 #-----------------------------------------------------
 
@@ -39,23 +41,23 @@ var argreg = ["rdi", "rsi", "rdx", "rcx", "r8", "r9"]
 proc gen(node: Node) =
 
   case node.kind
-  of NdNum:
+  of NdNum: #todo 数値の時はこのNodeKind
     echo fmt"  push {node.val}"
-    return
-  of NdExprStmt:    # !意味のない式，数値対策？ 3;みたいな
+    return  #! 計算しないNodeKindは全てリターン
+  of NdExprStmt:  #todo 左辺を生成するだけの時はこのNodeKind
     gen(node.lhs)
     echo "  add rsp, 8"   # !pop raxをする代わり？ スタックポインタを上に8あげればpopしたのと同じ.
     return
-  of NdLvar:
+  of NdLvar:  #todo 変数を使用する時はこのNodeKind
     genAddr(node)
     load()
     return
-  of NdAssign:
+  of NdAssign:  #todo 変数を定義する時はこのNodeKind
     genAddr(node.lhs)
     gen(node.rhs)
     store()
     return
-  of NdIf:
+  of NdIf:  #todo if文はこのNodeKind
     var seq = labelSeq  # !ラベル番号はユニークにする
     inc(labelSeq)
     if node.els != nil:
@@ -65,7 +67,7 @@ proc gen(node: Node) =
       echo fmt"  je .Lelse{seq}"
       gen(node.then)
       echo fmt"  jmp .Lend{seq}"
-      echo fmt".Lelse{seq}:"  #TODO :を付け忘れた覚書
+      echo fmt".Lelse{seq}:"  #! :を付け忘れた覚書
       gen(node.els)
       echo fmt".Lend{seq}:"
     else:
@@ -76,7 +78,7 @@ proc gen(node: Node) =
       gen(node.then)
       echo fmt".Lend{seq}:"
     return
-  of NdWhile:
+  of NdWhile: #todo while文はこのNodeKind
     var seq = labelSeq
     inc(labelSeq)
     echo fmt".Lbegin{seq}:"
@@ -87,8 +89,8 @@ proc gen(node: Node) =
     gen(node.then)
     echo fmt"   jmp .Lbegin{seq}"
     echo fmt".Lend{seq}:"
-    return    # TODO return忘れてた覚書
-  of NdFor:
+    return    #! return忘れてた覚書
+  of NdFor: #todo for文はこのNodeKind
     var seq = labelSeq
     inc(labelSeq)
     if node.init != nil:
@@ -105,41 +107,43 @@ proc gen(node: Node) =
     echo fmt"   jmp .Lbegin{seq}"
     echo fmt".Lend{seq}:"
     return
-  of NdBlock:
+  of NdBlock: #todo {}の中身はひたすら生成, body: seq[Node]
     for tmp in node.body:
       gen(tmp)
       # echo "  pop rax" # 多分readExprStmtのおかげでいらなくなった（便利です）
     return
-  of NdFuncall:
+  of NdFuncall: #todo 関数の時はこのNodeKind
+
+    #* 関数の引数をローカル変数として格納
     var nargs = 0
     var arg = node.args
     while arg != nil:
-      gen(arg)
+      gen(arg)  #! 順番にスタックにpushされている．
       inc(nargs)
       arg = arg.next
 
     var i = nargs - 1
     while i >= 0:
-      echo fmt"  pop {argreg[i]}"
+      echo fmt"  pop {argreg[i]}" #! 順番にスタックからpopされている．(ABI仕様), rspが関数の開始位置まで戻る
       dec(i)
 
     var seq = labelSeq
     inc(labelSeq)
-    echo "  mov rax, rsp"
-    echo "  and rax, 15"
-    echo fmt"  jnz .Lcall{seq}"
-    echo "  mov rax, 0"
+    echo "  mov rax, rsp" #! raxは16の倍数じゃないとダメ！
+    echo "  and rax, 15"  #! 関数を呼ぶ前にRSPを調整するようにして、RSPを16の倍数になるように調整(pushやpopはRSPを8バイト単位で変更するから、call命令を発行するときに必ずしもRSPが16の倍数になっているとは限らん)
+    echo fmt"  jnz .Lcall{seq}" #! 比較結果が0じゃなかったら飛ぶ
+    echo "  mov rax, 0" 
     echo fmt"  call {node.funcname}"
     echo fmt"  jmp .Lend{seq}"
     echo fmt".Lcall{seq}:"
-    echo "  sub rsp, 8"
-    echo "  mov rax, 0"
+    echo "  sub rsp, 8" #! jnz .Lcall{seq}が発動されるとここに飛んできて，スタックを伸ばす
+    echo "  mov rax, 0" 
     echo fmt"  call {node.funcname}"
-    echo "  add rsp, 8"
+    echo "  add rsp, 8" #! 関数読んだ後にスタックを縮ませる
     echo fmt".Lend{seq}:"
     echo "  push rax"
     return
-  of NdReturn:
+  of NdReturn:  #todo returnの時は左辺を生成してpopreturn
     gen(node.lhs)
     echo "  pop rax"    # !これまでは毎回ポップしていたが，returnの時だけポップするので良い(複数のノードを生成しない)
     echo fmt"  jmp .Lreturn.{funcname}"
@@ -153,6 +157,7 @@ proc gen(node: Node) =
   echo "  pop rdi"
   echo "  pop rax"
 
+  #todo 計算&比較ふぇーーーーーーーーーず(returnせず，スタックに値を保存するだけ)
   case node.kind
   of NdAdd:
     echo "  add rax, rdi"
@@ -197,15 +202,18 @@ proc codegen*(prog: Function) =
     echo fmt"{fn.name}:"
     funcname = fn.name
 
+    #* プロローグ
     echo "  push rbp"
     echo "  mov rbp, rsp"
     echo fmt"  sub rsp, {fn.stackSize}"
 
     var i = 0
-    var vl = fn.params
+    # !vlの中身は,0-6の連結
+    var vl = fn.params  #! ここでオフセットを指定するためにparamsは使われる．ここには引数だけ入ってる
     while vl != nil:
       var lvar = vl.lvar
-      echo fmt"  mov [rbp-{lvar.offset}], {argreg[i]}"
+      #!  レジスタの値をそのローカル変数のためのスタック上の領域に書き出し(ローカル変数と同じように扱える)
+      echo fmt"  mov [rbp-{lvar.offset}], {argreg[i]}" #! 最初に6つのローカル変数のぶんのスタック領域を確保しておく（空白で良い）
       inc(i)
       vl = vl.next
 
@@ -215,7 +223,7 @@ proc codegen*(prog: Function) =
       gen(node)
       node = node.next
 
-    # 終わり
+    # *エピローグ
     echo fmt".Lreturn.{funcname}:"
     echo "  mov rsp, rbp"
     echo "  pop rbp"

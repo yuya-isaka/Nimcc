@@ -36,19 +36,11 @@ proc expectNumber(): int =
   token = token.next
   return val
 
-proc expectIdent(): string =
-  if token.kind != TkIdent:
-    errorAt("識別子ではありません")
-
-  var val = token.str
-  token = token.next
-  return val
-
 # 終端チェック
 proc atEof(): bool =
   return token.kind == TkEof
 
-# 変数チェック
+# 変数チェック1
 proc consumeIdent(): (Token, bool) =
   if token.kind != TkIdent:
     return (nil, false)   # !よくみたらここでnil返してるやんけ!!!
@@ -56,6 +48,15 @@ proc consumeIdent(): (Token, bool) =
   var tmpTok: Token = token
   token = token.next
   return (tmpTok, true)
+
+# 変数チェック2
+proc expectIdent(): string =
+  if token.kind != TkIdent:
+    errorAt("識別子ではありません")
+
+  var val = token.str
+  token = token.next
+  return val
 
 #-----------------------------------------------------------------------
 
@@ -144,6 +145,7 @@ proc readFuncParams(): LvarList =
   if consume(")"):
     return nil
 
+  # *引数をローカル変数localsに追加しておく（最初に）
   var head = new LvarList
   head.lvar = pushLvar(expectIdent())
   var cur = head
@@ -159,13 +161,13 @@ proc readFuncParams(): LvarList =
 # ident "(" params? ")" "{" stmt* "}"
 # params = ident ("," ident)*
 proc function(): Function =
-  locals = nil # nilを設定
+  locals = nil # 関数内のローカル変数を保存するためのlocalsを初期化
 
   var fn = new Function
-  fn.name = expectIdent()
+  fn.name = expectIdent() # 全てのプログラムが関数の中だと考える．まずは関数名が来るはず．
 
   expect("(")
-  fn.params = readFuncParams()
+  fn.params = readFuncParams() #! 最初に!!!引数をローカル変数localsに追加しておく
   expect("{")
 
   # Node用連結リスト作成
@@ -235,8 +237,8 @@ proc stmt(): Node =
 
   if consume("{"):
     var node = newNode(NdBlock)
-    while not consume("}"):
-      node.body.add(stmt())
+    while not consume("}"): #! ruiさんのとは違う実装だよー気をつけてなー未来の自分〜
+      node.body.add(stmt())   #! 配列にしてみた．
     return node
 
   var node = readExprStmt() #   関数でくくり出した
@@ -341,8 +343,7 @@ proc primary(): Node =
   if tok[1]:
     if consume("("):
       var node = newNode(NdFuncall)
-      var val = tok[0].str
-      node.funcname = val
+      node.funcname = tok[0].str
       node.args = funcArgs()
       return node
     var tmpLvar = findLvar(tok[0]) # LvarList, bool

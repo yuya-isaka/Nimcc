@@ -2,6 +2,6 @@ test:
 	./test.sh
 
 clean:
-	rm -f main *.o *~ tmp*
+	rm -f nimcc *.o *~ tmp*
 
 .PHONY: test clean

@@ -3,7 +3,7 @@ assert() {
     expected="$1"
     input="$2"
 
-    ./main "$input" > tmp.s
+    ./nimcc "$input" > tmp.s
     cc -o tmp tmp.s
     ./tmp
     actual="$?"
@@ -16,7 +16,7 @@ assert() {
     fi
 }
 
-nim c main.nim
+nim c nimcc.nim
 
 assert 0 'main() { return 0; }'
 assert 42 'main() { return 42; }'

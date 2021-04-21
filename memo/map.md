@@ -37,7 +37,7 @@
     - 次のLvarList型
     - Lvar型
 
-- エラー表示関数
+- エラー表示関数(Tokeを渡すことで，codegenでのエラーも感知)
 
 - NodeKind
     - \+
@@ -52,12 +52,14 @@
     - =
     - 変数
     - return
-    - exprstmt
+    - ExprStmt(式と文)
     - if
     - while
     - for
-    - block
+    - block, 複文
     - function
+    - ポインタ，アドレス
+    - ポインタ，デリファレンス
 
 - Node型（連結リスト）
     - NodeKind
@@ -108,6 +110,7 @@
 # parse.nim
 
 - locals(LvarList，ローカル変数，連結リスト)
+- tokPrev(Token, エラー表示用トークン，consumeで進める前のTokenを保持)
 
 - TokenKindチェック関数群
     - consume(記号チェック1)
@@ -130,14 +133,14 @@
 
 - 構文解析に必要な関数
     - readFuncParams...読んだ関数の引数をあらかじめlocalsに追加
-    - readExprStmt...codegenでただgen()して，その後popして値を使わないやつ用．（例：node.init, node.inc）
+    - readExprStmt...式の文，codegenでただgen()して，その後popして値を使わないやつ用．（例：node.init, node.inc）
     - funcArgs...関数の引数たちをassign()で解析．解析結果の先頭を返す．
 
 - 再帰下降構文解析(LL1パーサ)
     - program(Function)...Function型のhead作成し，終端までfunction()を生成し繋げ続ける．
     - function(Function)...関数の名前・引数・bodyを読む．bodyは先頭Nodeを作成して，}までstmt()を生成して繋ぎ続ける.
-    - stmt(Node)...return, if, while, for, {}, ;
-    - expr(Node)...
+    - stmt(Node)...return, if, while, for, {}, ; ... 文
+    - expr(Node)... 式
     - assign(Node)...=
     - equality(Node)... ==, !=
     - relational(Node)...<, <=，>，>=

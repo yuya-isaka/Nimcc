@@ -58,7 +58,7 @@ proc checkReserved(cur: var Token): (string, bool) = # !tupleを返す
         return (tmpStr, true)
 
     # こっちを後
-    var strList3 = ['+', '-', '*', '/', '(', ')', '<', '>', ';', '=', '{', '}', ',']
+    var strList3 = ['+', '-', '*', '/', '(', ')', '<', '>', ';', '=', '{', '}', ',', '&']
     for tmp in strList3:
       if input[idx] == tmp:
         return ($input[idx], true)

@@ -188,7 +188,7 @@ proc function(): Function =
   fn.locals = locals
   return fn
 
-proc readExprStmt(): Node =
+proc readExprStmt(): Node =  #! 左辺値？？？
   var tok = token #! ???この関数を呼び出すときはconsumeでtokenの連結が進められないから．現在参照している部分を見ればいい
   return newNode(NdExprStmt, expr(), tok)
 
@@ -209,8 +209,10 @@ proc stmt(): Node =
   if consume("if"):
     var node = newNode(NdIf, tokPrev) # 左辺にノードを作るわけじゃないからnewNode(NdIf, expr())としない
     expect("(")
-    node.cond = expr()    # !node型のcondメンバ変数に値を格納
+    #todo 式！！！！！！！!!!!!!!!!!!!!!!!!!!
+    node.cond = expr()    #! node型のcondメンバ変数に値を格納
     expect(")")
+    #todo 文！！！！！！!!!!!!!!!!!!!!!!!1
     node.then = stmt()    # !ifの中でifを使ってもいい
     if consume("else"):
       node.els = stmt()
@@ -219,8 +221,10 @@ proc stmt(): Node =
   if consume("while"):
     var node = newNode(NdWhile, tokPrev)
     expect("(")
-    node.cond = expr()
+    #todo 式！！！！！！！!!!!!!!!!!!!!!!!!!!
+    node.cond = expr() #!!!!!!! node.condはcodegen内で，pop raxする予定があるから，readExprStmtでラップするのはだめ!!!!!!1
     expect(")")
+    #todo 文！！！！！！!!!!!!!!!!!!!!!!!
     node.then = stmt()
     return node
 
@@ -228,10 +232,12 @@ proc stmt(): Node =
     var node = newNode(NdFor, tokPrev)
     expect("(")
     if not consume(";"):
-      node.init = readExprStmt()    # !readExprStmtでラップしないと，スタックに不要な値が残ってしまう
+      node.init = readExprStmt()    # !readExprStmtでラップしないと，スタックに不要な値が残ってしまう, 式の文！
+      #! ここのforのifでは最終的にnode.then = stmt() の値を返すため(この値は結局255らへんのreadExprStmt()にラップされてる）
+      #! この式の文の値は括っとかないとスタックから解放されない．
       expect(";")
     if not consume(";"):
-      node.cond = expr()    # !node.condはcodegen内で，pop raxする予定があるから，readExprStmtでラップするのはだめ
+      node.cond = expr()    #!!!!!!! node.condはcodegen内で，pop raxする予定があるから，readExprStmtでラップするのはだめ!!!!!!1
       expect(";")
     if not consume(")"):
       node.inc = readExprStmt()
@@ -245,7 +251,9 @@ proc stmt(): Node =
       node.body.add(stmt())   #! 配列にしてみた．
     return node
 
-  var node = readExprStmt() #   関数でくくり出した
+  #todo 式の文!!!!!!!!!!!! ->  -> だからpopしないといけない．　スタックに残る！　add rsp, 8する！！！
+  #todo 式にセミコロンがつく．　セミコロンがつくと文になる．
+  var node = readExprStmt() #! 式の文(基本的にここの中で評価される． a=3; とかとか)
   expect(";")
   return node
 
@@ -313,13 +321,19 @@ proc mul(): Node =
     else:
       return node
 
-# ("+" | "-")? primary
+# unary = ("+" | "-" | "&" | "*" )? unary | primary
 proc unary(): Node =
   if consume("+"):
-    return primary()
+    return unary()  #! これ忘れてた．．++とかもそりゃいいよね
 
   if consume("-"):
     return newNode(NdSub, newNode(0, tokPrev), unary(), tokPrev) # !- - や - + などを許すために，ここはunary
+
+  if consume("&"):
+    return newNode(NdAddr, unary(), tokPrev)
+
+  if consume("*"):
+    return newNode(NdDeref, unary(), tokPrev)
 
   return primary()
 
@@ -356,5 +370,5 @@ proc primary(): Node =
     return newNode(tmpLvar[0], tokPrev)
 
   if token.kind != TkNum:
-    errorAt("expected omission", token)
+    errorAt("expected expression", token)
   return newNode(expectNumber(), tokPrev)

@@ -88,7 +88,9 @@ type
     NdWhile,
     NdFor,
     NdBlock,
-    NdFuncall
+    NdFuncall,
+    NdAddr,
+    NdDeref
 
 # ノード型
 type

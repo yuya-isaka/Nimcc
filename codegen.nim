@@ -8,12 +8,19 @@ import strformat
 
 #-----------------------------------------------------
 
+proc gen(node: Node)
+
 # 変数生成
 proc genAddr(node: Node) =
-  if node.kind == NdLvar:
+  case node.kind:
+  of NdLvar:
     echo fmt"  lea rax, [rbp-{node.arg.offset}]"  #! アドレス計算を行うが，メモリアクセスは行わず，アドレス計算の結果そのものをraxに代入
     #! raxにはアドレスが入ってる
     echo "  push rax"
+    return
+  of NdDeref:
+    gen(node.lhs)
+    return
   else:
     errorAt("not an lvalue", node.tok)  #! Token型を渡す設計にすることで， コードジェネレートの際のエラー位置を正確に確認できるようになった（本当か
 
@@ -42,6 +49,7 @@ var argreg = ["rdi", "rsi", "rdx", "rcx", "r8", "r9"] #! 関数の引数の順�
 # コードジェネレート
 proc gen(node: Node) =
 
+  #! ここはreturnされるcase switch文
   case node.kind
   of NdNum: #todo 数値の時はこのNodeKind
     echo fmt"  push {node.val}"
@@ -58,6 +66,13 @@ proc gen(node: Node) =
     genAddr(node.lhs)
     gen(node.rhs)
     store()
+    return
+  of NdAddr:
+    genAddr(node.lhs)
+    return
+  of NdDeref:
+    gen(node.lhs)
+    load()
     return
   of NdIf:  #todo if文はこのNodeKind
     var seq = labelSeq  # !ラベル番号はユニークにする
@@ -151,7 +166,7 @@ proc gen(node: Node) =
     echo fmt"  jmp .Lreturn.{funcname}"
     return
   else:
-    discard
+    discard #! ここで捨てないと下の処理見れない
 
   gen(node.lhs)   # !これより下のNode型は，2つの値を使用する計算だから，まとめて上でgen(node.lhs),gen(node.rhs)している
   gen(node.rhs)   # !case文の各Node型の中で実行しても良い

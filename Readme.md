@@ -1,12 +1,44 @@
-# NimでCコンパイラ作るぞ（自分用メモ）
-> 参考：https://github.com/rui314/9cc
+# nimcc: A small C compiler written in Nim
+
+## Prerequisites
+- 64-bit Linux environment that runs on ordinary PCs such as Intel and AMD.
+- Having [nim](https://nim-lang.org/), gcc, make, git, binutils and libc6-dev installed.
+    ```
+    $ sudo apt install -y nim gcc make git binutils libc6-dev
+    ```
+- MacOS is quite compatible with Linux at the source level of assembly, but not fully compatible.
+- Setting up a Linux development environment using Docker
+    ```
+    Open the directory containing the Dockerfile and type
+    $ docker build -t compilerbooknim .
+    $ docker run --rm -it -v $HOME/nimcc:/home/user/nimcc compilerbooknim
+    ```
+
+## How to run
+- Open the directory and type ```make``` in the terminal.
+
+## Features
+- Basic arithmetic operations
+- Unary plus and unary minus
+- Comparison operations
+- Functions
+- Local variables
+- Control syntax (if, while, for)
+- Blocks
+
+## Reference
+- https://github.com/rui314/9cc
+- https://www.sigbus.info/compilerbook
+
+***
+
+## Memorandom
 
 - 64ビットのLinux環境を想定
 - 現状，アセンブリをmain → _main と書き換えてmacで動作してる（のでmacで開発中，詰まったらDockerのLinux環境にお引っ越し．．）
 - 詰まったので，アセンブリを _main -> main に書き戻してお引っ越し
-***
 
-## 開発環境構築（Dockerで構築）
+### 開発環境構築（Dockerで構築）
 - (要らなかったかも，一旦ローカルで開発を進める...4/11)
 - 要りました！ x86-64のmovzb命令がmacだと使えなかった．．詳しく調べてないけど，Dockerで開発
 > 参考：https://www.sigbus.info/compilerbook#docker
@@ -53,15 +85,12 @@
     $ docker system prune
     ```
 
-***
-
-## Dockerのエイリアス作成
+### Dockerのエイリアス作成
 (Docker関連要らなかったかもだから，一旦保留)
 つくらんかも
 
-***
 
-## 初めの第一歩
+### 初めの第一歩
 > 参考：https://www.sigbus.info/compilerbook#%E3%82%B9%E3%83%86%E3%83%83%E3%83%971%E6%95%B4%E6%95%B01%E5%80%8B%E3%82%92%E3%82%B3%E3%83%B3%E3%83%91%E3%82%A4%E3%83%AB%E3%81%99%E3%82%8B%E8%A8%80%E8%AA%9E%E3%81%AE%E4%BD%9C%E6%88%90
 1. nimcc.nim を準備
 
@@ -95,24 +124,21 @@
     - make か make test でテスト実行
     - make clean で綺麗
 
-***
 
-## メモ
+### メモ
 - nimMemo.md
 - nimMemo2.md
 - compilerMemo.md
 - csMemo
 
-***
 
-## Nim，外部モジュール
+### Nim，外部モジュール
 - OS
 - strutils
 - strformat
 
-***
 
-## 電卓に毛が生えた処理系を作ろう
+### 電卓に毛が生えた処理系を作ろう
 ### 1. 整数一個をコンパイルする処理系
 ### 2. 単純な加減算できる処理系
     5+20-4

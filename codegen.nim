@@ -35,11 +35,11 @@ proc store() =
   echo "  pop rdi"
   echo "  pop rax"
   echo "  mov [rax], rdi"
-  echo "  push rdi"     # !NdAssignはNdExprStmtにラップされてるから，ここでpushしたものは，add rsp, 8で抜き取られる(ちゃんと取り除ける)
+  echo "  push rdi"     #! NdAssignはNdExprStmtにラップされてるから，ここでpushしたものは，add rsp, 8で抜き取られる(ちゃんと取り除ける)
 
 #--------------------------------------------------------
 
-var labelSeq: int # !0で初期化してくれる
+var labelSeq: int #! 0で初期化してくれる
 var funcname: string
 #! 引数は6つ
 var argreg = ["rdi", "rsi", "rdx", "rcx", "r8", "r9"] #! 関数の引数の順番． x86-64, ABI仕様で決められている．　このルールに従わないと適切な機械語を生成できない
@@ -56,7 +56,7 @@ proc gen(node: Node) =
     return  #! 計算しないNodeKindは全てリターン
   of NdExprStmt:  #todo 左辺を生成するだけの時はこのNodeKind
     gen(node.lhs)
-    echo "  add rsp, 8"   # !pop raxをする代わり？ スタックポインタを上に8あげればpopしたのと同じ.
+    echo "  add rsp, 8"   #! pop raxをする代わり？ スタックポインタを上に8あげればpopしたのと同じ.
     return
   of NdLvar:  #todo 変数を使用する時はこのNodeKind
     genAddr(node)
@@ -75,7 +75,7 @@ proc gen(node: Node) =
     load()
     return
   of NdIf:  #todo if文はこのNodeKind
-    var seq = labelSeq  # !ラベル番号はユニークにする
+    var seq = labelSeq  #! ラベル番号はユニークにする
     inc(labelSeq)
     if node.els != nil:
       gen(node.cond)
@@ -162,14 +162,14 @@ proc gen(node: Node) =
     return
   of NdReturn:  #todo returnの時は左辺を生成してpopreturn
     gen(node.lhs)
-    echo "  pop rax"    # !これまでは毎回ポップしていたが，returnの時だけポップするので良い(複数のノードを生成しない)
+    echo "  pop rax"    #! これまでは毎回ポップしていたが，returnの時だけポップするので良い(複数のノードを生成しない)
     echo fmt"  jmp .Lreturn.{funcname}"
     return
   else:
     discard #! ここで捨てないと下の処理見れない
 
-  gen(node.lhs)   # !これより下のNode型は，2つの値を使用する計算だから，まとめて上でgen(node.lhs),gen(node.rhs)している
-  gen(node.rhs)   # !case文の各Node型の中で実行しても良い
+  gen(node.lhs)   #! これより下のNode型は，2つの値を使用する計算だから，まとめて上でgen(node.lhs),gen(node.rhs)している
+  gen(node.rhs)   #! case文の各Node型の中で実行しても良い
 
   echo "  pop rdi"
   echo "  pop rax"
@@ -204,7 +204,7 @@ proc gen(node: Node) =
   else:
     discard
 
-  echo "  push rax"   # !式全体の結果を，スタックトップにプッシュ
+  echo "  push rax"   #! 式全体の結果を，スタックトップにプッシュ
 
 #--------------------------------------------------------------------------
 
@@ -225,7 +225,7 @@ proc codegen*(prog: Function) =
     echo fmt"  sub rsp, {fn.stackSize}"
 
     var i = 0
-    # !vlの中身は,0-6の連結
+    #! vlの中身は,0-6の連結
     var vl = fn.params  #! ここでオフセットを指定するためにparamsは使われる．ここには引数だけ入ってる
     while vl != nil:
       var lvar = vl.lvar

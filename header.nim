@@ -33,7 +33,7 @@ type
     str*: string       # トークン文字列
     at*: int           # 入力文字配列のうち，どこを指しているか（先頭インデックス）
 
-# !現在着目しているトークン
+#! 現在着目しているトークン
 var token*: Token = nil
 
 #----------------------------------------------------------
@@ -96,7 +96,7 @@ type
 type
   Node* = ref object
     kind*: NodeKind  # ノードの種類
-    next*: Node      # !次のノード, 複数のノードを配列(code)ではなく，連結リストで管理
+    next*: Node      #! 次のノード, 複数のノードを配列(code)ではなく，連結リストで管理
     lhs*: Node       # 左辺
     rhs*: Node       # 右辺
     val*: int        # kindがNdNumの場合の数値
@@ -125,8 +125,8 @@ type Function* = ref object
   next*: Function
   name*: string
   params*: LvarList
-  node*: Node       # !複数ノード連結リストの先頭
-  locals*: LvarList     # !ローカル変数連結リストの先頭
+  node*: Node       #! 複数ノード連結リストの先頭
+  locals*: LvarList     #! ローカル変数連結リストの先頭
   stackSize*: int   # ローカル変数に用いたスタックサイズ
 
 var program*: Function

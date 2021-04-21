@@ -7,7 +7,7 @@
 import header
 import strformat
 
-# !ローカル変数（連結リスト）
+#! ローカル変数（連結リスト）
 var locals: LvarList
 var tokPrev: Token = nil #! エラー表示用！　consumeで進める前のTokenを保持．　エラー表示に使える．　グローバル変数は使い所考えると有益
 
@@ -45,7 +45,7 @@ proc atEof(): bool =
 # 変数チェック1
 proc consumeIdent(): (Token, bool) =
   if token.kind != TkIdent:
-    return (nil, false)   # !よくみたらここでnil返してるやんけ!!!
+    return (nil, false)   #! よくみたらここでnil返してるやんけ!!!
 
   var tmpTok: Token = token
   token = token.next
@@ -63,14 +63,14 @@ proc expectIdent(): string =
 #-----------------------------------------------------------------------
 
 # 既に登録されている変数がチェック
-proc findLvar(tok: Token): (Lvar, bool) = # !tupleを返す(この設計は直さないといけん)
+proc findLvar(tok: Token): (Lvar, bool) = #! tupleを返す(この設計は直さないといけん)
   var vl: LvarList = locals
   while vl != nil:
     var lvar = vl.lvar
     if lvar.name == tok.str:
       return (lvar, true)
     vl = vl.next
-  return (nil, false)   # !一度バグって何も動かなくなった．ここでnilを返すように変更したのが良かった．（初期化されていないオブジェクトを返そうとしていた？）
+  return (nil, false)   #! 一度バグって何も動かなくなった．ここでnilを返すように変更したのが良かった．（初期化されていないオブジェクトを返そうとしていた？）
 
 # ローカル変数の連結リストに追加
 proc pushLvar(name: string): Lvar =
@@ -83,7 +83,7 @@ proc pushLvar(name: string): Lvar =
   locals = vl
   return lvar
 
-#!オーバーロード--------------------------------------------------------------
+#! オーバーロード--------------------------------------------------------------
 
 # 単純なノード生成(ノードの型)
 proc newNode(kind: NodeKind, tok: Token): Node =
@@ -176,7 +176,7 @@ proc function(): Function =
   # Node用連結リスト作成
   var head = new Node # ヒープにアロケート
   head.next = nil
-  var cur = head # !参照のコピーだから中身は同じ
+  var cur = head #! 参照のコピーだから中身は同じ
 
   # ノードを生成(連結リスト)
   while not consume("}"):
@@ -184,7 +184,7 @@ proc function(): Function =
     cur = cur.next
 
   # プログラム生成
-  fn.node = head.next # !連結リストの先頭を取得
+  fn.node = head.next #! 連結リストの先頭を取得
   fn.locals = locals
   return fn
 
@@ -327,7 +327,7 @@ proc unary(): Node =
     return unary()  #! これ忘れてた．．++とかもそりゃいいよね
 
   if consume("-"):
-    return newNode(NdSub, newNode(0, tokPrev), unary(), tokPrev) # !- - や - + などを許すために，ここはunary
+    return newNode(NdSub, newNode(0, tokPrev), unary(), tokPrev) #! -- や -+ などを許すために，ここはunary
 
   if consume("&"):
     return newNode(NdAddr, unary(), tokPrev)

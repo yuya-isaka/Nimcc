@@ -34,10 +34,10 @@ proc isAlnum(c: string): bool =
   return isAlpha(c) or ("0" <= c and c <= "9")
 
 # 予約語をチェック
-proc checkReserved(cur: var Token): (string, bool) = # !tupleを返す
+proc checkReserved(cur: var Token): (string, bool) = #! tupleを返す
 
     # "return", "if", "else"
-    var strList1 = ["return", "if", "else", "while", "for"] # !arrayになります
+    var strList1 = ["return", "if", "else", "while", "for"] #! arrayになります
     for tmp in strList1:
       var tmpStr: string = $input[idx]
       var tmpIdx: int = idx+1
@@ -45,7 +45,7 @@ proc checkReserved(cur: var Token): (string, bool) = # !tupleを返す
         if len(input) > tmpIdx:
           tmpStr.add($input[tmpIdx])
           inc(tmpIdx)
-      if tmpStr == tmp and not isAlnum($input[tmpIdx]): # !returnxとかifxとかの記述を禁止する
+      if tmpStr == tmp and not isAlnum($input[tmpIdx]): #! returnxとかifxとかの記述を禁止する
         return (tmpStr, true)
 
     # こっちを先
@@ -82,7 +82,7 @@ proc tokenize*(): Token =
       continue
 
     # 予約語(こいつは先に)
-    var tmpStr = checkReserved(cur) # !TkReservedに関するトークン作成はこの関数で!
+    var tmpStr = checkReserved(cur) #! TkReservedに関するトークン作成はこの関数で!
     if tmpStr[1]:
       cur = newToken(TkReserved, cur, tmpStr[0])
       idx += len(tmpStr[0]) # 読んだ文字列文インデックスを進める

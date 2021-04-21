@@ -3,6 +3,7 @@
 ## Prerequisites
 - 64-bit Linux environment that runs on ordinary PCs such as Intel and AMD.
 - Having [nim](https://nim-lang.org/), gcc, make, git, binutils and libc6-dev installed.
+
     ```
     $ sudo apt install -y nim gcc make git binutils libc6-dev
     ```

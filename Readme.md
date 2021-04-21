@@ -10,6 +10,7 @@
 - Setting up a Linux development environment using Docker
     ```
     Open the directory containing the Dockerfile and type
+
     $ docker build -t compilerbooknim .
     $ docker run --rm -it -v $HOME/nimcc:/home/user/nimcc compilerbooknim
     ```

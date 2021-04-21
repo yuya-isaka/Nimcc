@@ -158,12 +158,12 @@
 - argreg(引数用のレジスタ名，６つ，ABIで順番決められてる)
 
 - ローカル変数を扱う関数群
-    - genAddr...[rbp-offset]の**アドレス値**を取得，スタックに追加(lea,push)
+    - genAddr...[rbp-offset]の**アドレス値**を取得，スタックに追加(lea,push), ポインタのデリファレンス経由で変数に値を代入する場合もここで評価（左辺値に何が来るかgenして求める）
     - load...変数をロード
     - store...変数をストア
 
 - gen(NdKindで場合分けて出力)
-    - Returnする（NdNum, NdExprStmt, NdLvar, NdAssign, NdIf, NdWhile, NdFor, NdBlock, NdFuncall, NdReturn)
+    - Returnする（NdNum, NdExprStmt, NdLvar, NdAssign, NdAddr, NdDeref, NdIf, NdWhile, NdFor, NdBlock, NdFuncall, NdReturn)
     - gen左辺
     - gen右辺
     - pop rdi

@@ -34,7 +34,7 @@ type
     at*: int           # 入力文字配列のうち，どこを指しているか（先頭インデックス）
 
 # !現在着目しているトークン
-var token*: Token
+var token*: Token = nil
 
 #----------------------------------------------------------
 
@@ -52,15 +52,17 @@ type
 #-----------------------------------------------------------
 
 # エラー表示関数(今微妙に使い勝手が悪い．ので後々書き換える)
-proc errorAt*(errorMsg: string) =
+# メッセージとトークンを受け取って，そのトークンの位置に値を挿入する
+proc errorAt*(errorMsg: string, tok: Token) = 
   var tmp: string
   for i in input:
     tmp.add($i)
   echo tmp
-  if token == nil: # 初期化されていない参照型Objectはnilとなる # 例外チェック # 本来はoption型とかを使うべき
+  # nilを引数で渡せる？
+  if tok == nil: # 初期化されていない参照型Objectはnilとなる # 例外チェック # 本来はoption型とかを使うべき
     echo " ".repeat(idx) & "^"
   else:
-    echo " ".repeat(token.at) & "^"
+    echo " ".repeat(tok.at) & "^"
   # echo idx
   quit(errorMsg)
 
@@ -106,13 +108,15 @@ type
     init*: Node
     inc*: Node
 
-    #kindがNdBlockの時
+    # kindがNdBlockの時
     body*: seq[Node]
 
-    #kindがNdFuncallの時
+    # kindがNdFuncallの時
     funcname*: string
     args*: Node
 
+    # エラー表示用
+    tok*: Token
 
 # 関数ごとに管理
 type Function* = ref object

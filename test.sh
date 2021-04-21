@@ -75,5 +75,6 @@ assert 7 'main() { return add2(3,4); } add2(x,y) { return x+y; }'
 assert 1 'main() { return sub2(4,3); } sub2(x,y) { return x-y; }'
 assert 55 'main() { return fib(9); } fib(x) { if (x<=1) return 1; return fib(x-1) + fib(x-2); }'
 assert 5 'main() { return tmp(2,3); } add(x,y) { return x + y; } tmp(x,y) { return add(x,y); }'
+assert 1 'main() { a = 4; b= 3; return sub2(a,b); } sub2(x,y) { return x-y; }'
 
 echo OK

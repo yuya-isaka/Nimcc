@@ -14,6 +14,8 @@ proc genAddr(node: Node) =
     echo fmt"  lea rax, [rbp-{node.arg.offset}]"  #! アドレス計算を行うが，メモリアクセスは行わず，アドレス計算の結果そのものをraxに代入
     #! raxにはアドレスが入ってる
     echo "  push rax"
+  else:
+    errorAt("not an lvalue", node.tok)  #! Token型を渡す設計にすることで， コードジェネレートの際のエラー位置を正確に確認できるようになった（本当か
 
 # 関数フレーム，プロローグ
 proc load() =

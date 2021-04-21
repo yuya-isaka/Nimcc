@@ -9,6 +9,7 @@ import strformat
 
 # !ローカル変数（連結リスト）
 var locals: LvarList
+var tokPrev: Token = nil #! エラー表示用！　consumeで進める前のTokenを保持．　エラー表示に使える．　グローバル変数は使い所考えると有益
 
 #--------------------------------------------------------
 
@@ -17,20 +18,21 @@ proc consume(op: string): bool =
   if token.kind != TkReserved or token.str != op:
     return false
 
+  tokPrev = token
   token = token.next
   return true
 
 # 現在のトークンが期待している記号の時には，トークンを１つ読み進める．# それ以外の場合にはエラー報告．
 proc expect(op: string) =
   if token.kind != TkReserved or token.str != op:
-    errorAt(fmt"{op}ではありません．")
+    errorAt(fmt"{op}ではありません．", token)
 
   token = token.next
 
 # 現在のトークンが数値の場合，トークンを１つ読み進めてその数値を返す. # それ以外の倍にはエラーを報告する
 proc expectNumber(): int =
   if token.kind != TkNum:
-    errorAt("数ではありません．")
+    errorAt("数ではありません．", token)
 
   var val = token.val
   token = token.next
@@ -52,7 +54,7 @@ proc consumeIdent(): (Token, bool) =
 # 変数チェック2
 proc expectIdent(): string =
   if token.kind != TkIdent:
-    errorAt("識別子ではありません")
+    errorAt("識別子ではありません", token)
 
   var val = token.str
   token = token.next
@@ -84,33 +86,34 @@ proc pushLvar(name: string): Lvar =
 #!オーバーロード--------------------------------------------------------------
 
 # 単純なノード生成(ノードの型)
-proc newNode(kind: NodeKind): Node =
+proc newNode(kind: NodeKind, tok: Token): Node =
   var node = new Node
   node.kind = kind
+  node.tok = tok
   return node
 
 # 二項演算子用のノード生成（ノードの型，左辺ノード，右辺ノード）
-proc newNode(kind: NodeKind, lhs: Node, rhs: Node): Node =
-  var node: Node = newNode(kind)
+proc newNode(kind: NodeKind, lhs: Node, rhs: Node, tok: Token): Node =
+  var node: Node = newNode(kind, tok)
   node.lhs = lhs
   node.rhs = rhs
   return node
 
 # 現在は，NdReturnとNdExprStmt用のノード（;で終わるものを扱う，左辺だけのノード）(ノードの型，左辺ノード)
-proc newNode(kind: NodeKind, lhs: Node): Node =
-  var node: Node = newNode(kind)
+proc newNode(kind: NodeKind, lhs: Node, tok: Token): Node =
+  var node: Node = newNode(kind, tok)
   node.lhs = lhs
   return node
 
 # 数値用のノード生成(数値)
-proc newNode(val: int): Node =
-  var node: Node = newNode(NdNum)
+proc newNode(val: int, tok: Token): Node =
+  var node: Node = newNode(NdNum, tok)
   node.val = val
   return node
 
 # 変数用のノード(変数型)
-proc newNode(arg: Lvar): Node =
-  var node = newNode(NdLvar)
+proc newNode(arg: Lvar, tok: Token): Node =
+  var node = newNode(NdLvar, tok)
   node.arg = arg
   return node
 
@@ -186,7 +189,8 @@ proc function(): Function =
   return fn
 
 proc readExprStmt(): Node =
-  return newNode(NdExprStmt, expr())
+  var tok = token #! ???この関数を呼び出すときはconsumeでtokenの連結が進められないから．現在参照している部分を見ればいい
+  return newNode(NdExprStmt, expr(), tok)
 
 #[
   "return" expr ";" 
@@ -198,12 +202,12 @@ proc readExprStmt(): Node =
 ]# 
 proc stmt(): Node =
   if consume("return"):
-    var node = newNode(NdReturn, expr())
+    var node = newNode(NdReturn, expr(), tokPrev)
     expect(";")
     return node
 
   if consume("if"):
-    var node = newNode(NdIf) # 左辺にノードを作るわけじゃないからnewNode(NdIf, expr())としない
+    var node = newNode(NdIf, tokPrev) # 左辺にノードを作るわけじゃないからnewNode(NdIf, expr())としない
     expect("(")
     node.cond = expr()    # !node型のcondメンバ変数に値を格納
     expect(")")
@@ -213,7 +217,7 @@ proc stmt(): Node =
     return node
 
   if consume("while"):
-    var node = newNode(NdWhile)
+    var node = newNode(NdWhile, tokPrev)
     expect("(")
     node.cond = expr()
     expect(")")
@@ -221,7 +225,7 @@ proc stmt(): Node =
     return node
 
   if consume("for"):
-    var node = newNode(NdFor)
+    var node = newNode(NdFor, tokPrev)
     expect("(")
     if not consume(";"):
       node.init = readExprStmt()    # !readExprStmtでラップしないと，スタックに不要な値が残ってしまう
@@ -236,7 +240,7 @@ proc stmt(): Node =
     return node
 
   if consume("{"):
-    var node = newNode(NdBlock)
+    var node = newNode(NdBlock, tokPrev)
     while not consume("}"): #! ruiさんのとは違う実装だよー気をつけてなー未来の自分〜
       node.body.add(stmt())   #! 配列にしてみた．
     return node
@@ -254,7 +258,7 @@ proc assign(): Node =
   var node = equality()
 
   if consume("="):
-    node = newNode(NdAssign, node, assign()) # a=b=3とかしたいから，ここは右辺はasign()
+    node = newNode(NdAssign, node, assign(), tokPrev) # a=b=3とかしたいから，ここは右辺はasign()
   return node
 
 # relational ("==" relational | "!=" relational)*
@@ -263,9 +267,9 @@ proc equality(): Node =
 
   while true:
     if consume("=="):
-      node = newNode(NdEq, node, relational())
+      node = newNode(NdEq, node, relational(), tokPrev)
     elif consume("!="):
-      node = newNode(NdNe, node, relational())
+      node = newNode(NdNe, node, relational(), tokPrev)
     else:
       return node
 
@@ -275,13 +279,13 @@ proc relational(): Node =
 
   while true:
     if consume("<"):
-      node = newNode(NdL, node, add())
+      node = newNode(NdL, node, add(), tokPrev)
     elif consume("<="):
-      node = newNode(NdLe, node, add())
+      node = newNode(NdLe, node, add(), tokPrev)
     elif consume(">"):
-      node = newNode(NdL, add(), node)
+      node = newNode(NdL, add(), node, tokPrev)
     elif consume(">="):
-      node = newNode(NdLe, add(), node)
+      node = newNode(NdLe, add(), node, tokPrev)
     else:
       return node
 
@@ -291,9 +295,9 @@ proc add(): Node =
 
   while true:
     if consume("+"):
-      node = newNode(NdAdd, node, mul())
+      node = newNode(NdAdd, node, mul(), tokPrev)
     elif consume("-"):
-      node = newNode(NdSub, node, mul())
+      node = newNode(NdSub, node, mul(), tokPrev)
     else:
       return node
 
@@ -303,9 +307,9 @@ proc mul(): Node =
 
   while true:
     if consume("*"):
-      node = newNode(NdMul, node, unary())
+      node = newNode(NdMul, node, unary(), tokPrev)
     elif consume("/"):
-      node = newNode(NdDiv, node, unary())
+      node = newNode(NdDiv, node, unary(), tokPrev)
     else:
       return node
 
@@ -315,7 +319,7 @@ proc unary(): Node =
     return primary()
 
   if consume("-"):
-    return newNode(NdSub, newNode(0), unary()) # !- - や - + などを許すために，ここはunary
+    return newNode(NdSub, newNode(0, tokPrev), unary(), tokPrev) # !- - や - + などを許すために，ここはunary
 
   return primary()
 
@@ -342,13 +346,15 @@ proc primary(): Node =
   var tok = consumeIdent() # Token, bool が返る（tuple）
   if tok[1]:
     if consume("("):
-      var node = newNode(NdFuncall)
+      var node = newNode(NdFuncall, tokPrev)
       node.funcname = tok[0].str
       node.args = funcArgs()
       return node
     var tmpLvar = findLvar(tok[0]) # LvarList, bool
     if not tmpLvar[1]:
       tmpLvar[0] = pushLvar(tok[0].str)
-    return newNode(tmpLvar[0])
+    return newNode(tmpLvar[0], tokPrev)
 
-  return newNode(expectNumber())
+  if token.kind != TkNum:
+    errorAt("expected omission", token)
+  return newNode(expectNumber(), tokPrev)

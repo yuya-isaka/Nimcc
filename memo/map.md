@@ -1,9 +1,13 @@
 # nimcc.nim
 
 - トークナイズ(字句解析)
+
 - パース(構文解析,lexer)
+
 - それぞれの関数内の引数＋ローカル変数たちにオフセット値を設定
+
 - ついでに全体のスタックサイズも保存
+
 - コード生成
 
 # header.nim
@@ -15,24 +19,30 @@
     - 識別子(変数)
     - 整数
     - 終端
+
 - Token型(連結リスト)
     - TokenKind
     - 次のToken型
     - 数値
     - 文字列
     - 入力文字列のうち指している先頭場所(いつか使えるといいな)
+
 - グローバル変数トークン(token)
+
 - Lvar型
     - 名前
     - オフセット
+
 - LvarList型(連結リスト)
     - 次のLvarList型
     - Lvar型
+
 - エラー表示関数
+
 - NodeKind
-    - +
-    - -
-    - *
+    - \+
+    - \-
+    - \*
     - /
     - 整数
     - ==
@@ -48,6 +58,7 @@
     - for
     - block
     - function
+
 - Node型（連結リスト）
     - NodeKind
     - 次のNode型
@@ -63,6 +74,7 @@
     - Node型配列(Block, 複数のstmtを持つ)->Ruiさんの実装とは違う．配列にしてみた．
     - 関数の名前
     - Node型(関数の引数(解析後))
+
 - Function型（連結リスト）
     - 次のFunction型
     - 関数の名前
@@ -70,6 +82,7 @@
     - Node型(node,先頭)
     - LvarList型(locals,ローカル変数)
     - スタックサイズ
+
 - グローバル変数program
 
 # tokenize.nim
@@ -103,19 +116,23 @@
     - atEof(終端チェック)
     - consumeIdent(識別子(変数)チェック1)
     - expectIdent(識別子(変数)チェック2)
+
 - 変数生成&チェック関数群
     - findLvar(localsに登録されてるかチェック)
     - pushLvar(localsに追加)
+
 - ノード生成関数群
     - newNode(NodeKind)
     - newNode(NodeKind, Node, Node)
     - newNode(NodeKind, Node)
     - newNode(int)
     - newNode(Lvar)
+
 - 構文解析に必要な関数
     - readFuncParams...読んだ関数の引数をあらかじめlocalsに追加
     - readExprStmt...codegenでただgen()して，その後popして値を使わないやつ用．（例：node.init, node.inc）
     - funcArgs...関数の引数たちをassign()で解析．解析結果の先頭を返す．
+
 - 再帰下降構文解析(LL1パーサ)
     - program(Function)...Function型のhead作成し，終端までfunction()を生成し繋げ続ける．
     - function(Function)...関数の名前・引数・bodyを読む．bodyは先頭Nodeを作成して，}までstmt()を生成して繋ぎ続ける.
@@ -134,11 +151,14 @@
 - labelSeq(ラベル用数値)
 
 - funcname(最初の関数名前保持，ここではmain)
+
 - argreg(引数用のレジスタ名，６つ，ABIで順番決められてる)
+
 - ローカル変数を扱う関数群
-    - genAddr...[rbp-offset]のアドレス値を取得，スタックに追加(lea,push)
+    - genAddr...[rbp-offset]の**アドレス値**を取得，スタックに追加(lea,push)
     - load...変数をロード
     - store...変数をストア
+
 - gen(NdKindで場合分けて出力)
     - Returnする（NdNum, NdExprStmt, NdLvar, NdAssign, NdIf, NdWhile, NdFor, NdBlock, NdFuncall, NdReturn)
     - gen左辺
@@ -147,6 +167,7 @@
     - pop rax
     - Returnしない，2つのNode結果を使う計算（NdAdd, NdSub, NdMul, NdDiv, NdEq, NdNe, NdL, NdLe）
     - push rax（計算結果はスタックに格納）
+    
 - codegen(与えられたFunction型の先頭から順番に生成)
     - アセンブリの冒頭
     - Functions型の先頭からなくなるまでループ

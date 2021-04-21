@@ -106,7 +106,7 @@ proc tokenize*(): Token =
       inc(idx)
       continue
 
-    errorAt("トークナイズできません．")
+    errorAt("トークナイズできません．", token)
 
   discard newToken(TkEof, cur, "\n")
   return head.next

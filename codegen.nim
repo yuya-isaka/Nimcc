@@ -10,7 +10,7 @@ import strformat
 
 proc gen(node: Node)
 
-# 変数生成
+#todo 変数生成, 左辺値生成でもある!!!!!! C言語の左辺値は基本的にメモリのアドレスを指定する式
 proc genAddr(node: Node) =
   case node.kind:
   of NdLvar:
@@ -19,7 +19,7 @@ proc genAddr(node: Node) =
     echo "  push rax"
     return
   of NdDeref:
-    gen(node.lhs)
+    gen(node.lhs) #! *p = 3 のようにデリファレンス経由で値を代入するときに対応するため， pのアドレスが生成されるように左辺値をコンパイル
     return
   else:
     errorAt("not an lvalue", node.tok)  #! Token型を渡す設計にすることで， コードジェネレートの際のエラー位置を正確に確認できるようになった（本当か
@@ -68,10 +68,10 @@ proc gen(node: Node) =
     store()
     return
   of NdAddr:
-    genAddr(node.lhs)
+    genAddr(node.lhs) #! 左辺値としてコンパイル！！！！！！！！！！！！！！！ -> アドレスを計算してスタックに格納
     return
   of NdDeref:
-    gen(node.lhs)
+    gen(node.lhs) #! NdLvarかNdAddrかNdDerefなどの可能性があるため**a， genで右辺値としてコンパイル！！！ -> どこかでgenAddrが生成される
     load()
     return
   of NdIf:  #todo if文はこのNodeKind

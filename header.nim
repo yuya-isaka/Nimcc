@@ -68,6 +68,20 @@ proc errorAt*(errorMsg: string, tok: Token) =
 
 # ------------------------------------------------------------------------------------
 
+# 型の種類
+type
+  TypeKind* = enum
+    TyInt,
+    TyPtr
+
+# 型型
+type
+  Type* = ref object
+    kind*: TypeKind
+    base*: Type   # TyPtrの時, 対象変数
+
+# ------------------------------------------------------------------------------------
+
 # ノードの種類（AST）
 type
   NodeKind* = enum
@@ -119,6 +133,9 @@ type
 
     # エラー表示用
     tok*: Token
+
+    # 型情報
+    ty*: Type
 
 # 関数ごとに管理
 type Function* = ref object

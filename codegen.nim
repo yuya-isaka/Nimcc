@@ -51,18 +51,18 @@ proc gen(node: Node) =
 
   #! ここはreturnされるcase switch文
   case node.kind
-  of NdNum: #todo 数値の時はこのNodeKind
+  of NdNum:
     echo fmt"  push {node.val}"
     return  #! 計算しないNodeKindは全てリターン
-  of NdExprStmt:  #todo 左辺を生成するだけの時はこのNodeKind
+  of NdExprStmt:
     gen(node.lhs)
     echo "  add rsp, 8"   #! pop raxをする代わり？ スタックポインタを上に8あげればpopしたのと同じ.
     return
-  of NdLvar:  #todo 変数を使用する時はこのNodeKind
+  of NdLvar:
     genAddr(node)
     load()
     return
-  of NdAssign:  #todo 変数を定義する時はこのNodeKind
+  of NdAssign:
     genAddr(node.lhs)
     gen(node.rhs)
     store()
@@ -177,8 +177,12 @@ proc gen(node: Node) =
   #todo 計算&比較ふぇーーーーーーーーーず(returnせず，スタックに値を保存するだけ)
   case node.kind
   of NdAdd:
+    if node.ty.kind == TyPtr:
+      echo "  imul rdi, 8"    # rdi = rdi * 8
     echo "  add rax, rdi"
   of NdSub:
+    if node.ty.kind == TyPtr:
+      echo "  imul rdi, 8"
     echo "  sub rax, rdi"
   of NdMul:
     echo "  imul rax, rdi"

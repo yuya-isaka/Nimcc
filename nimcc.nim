@@ -4,6 +4,7 @@
 ]#
 
 import header
+import typer
 import parse
 import codegen
 import tokenize
@@ -16,7 +17,11 @@ proc main() =
 
   # *パース
   var prog: Function = program()
-  # オフセット計算
+
+  # *型情報付与
+  addType(prog)
+
+  # *オフセット計算
   var fn: Function = prog
   while fn != nil:   #! Functionループ
 
@@ -29,6 +34,7 @@ proc main() =
 
     fn.stackSize = offset
     fn = fn.next
+
 
   # *アセンブリ生成
   codegen(prog)

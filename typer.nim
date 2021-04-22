@@ -65,6 +65,7 @@ proc visit(node: Node) =
   else:
     discard
 
+#! annotate AST nodes with types
 proc addType*(prog: Function) =
   var fn = prog 
   while fn != nil:

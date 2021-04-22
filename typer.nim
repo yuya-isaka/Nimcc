@@ -33,9 +33,10 @@ proc visit(node: Node) =
     n = n.next
 
   case node.kind
-  of NdNum, NdMul, NdDiv, NdEq, NdNe, NdL, NdLe, NdLvar, NdFuncall:
+  of NdNum, NdMul, NdDiv, NdEq, NdNe, NdL, NdLe, NdLvar, NdFuncall:   # 現状は全部intで扱う
     node.ty = intType()
     return
+  #! 加減算はポインタが絡むからしっかり書く
   of NdAdd:
     if node.rhs.ty.kind == TyPtr:
       var tmp = node.lhs
@@ -43,9 +44,10 @@ proc visit(node: Node) =
       node.rhs = tmp
     if node.rhs.ty.kind == TyPtr:
       errorAt("invalid pointer arithmetic operands", node.tok)
-    node.ty = node.lhs.ty
+    node.ty = node.lhs.ty   #! 右辺値がTyPtrだったらlhsとrhsを交換してるから自動的に，　右辺値がポインタなら右辺値の型，　右辺値が数値なら左辺値の型を入れる
+                            #! 加算はlhsとrhsが入れ替わっても問題ない
     return
-  of NdSub:
+  of NdSub:   #! ???
     if node.rhs.ty.kind == TyPtr:
       errorAt("invalid pointer arithmetic operands", node.tok)
     node.ty = node.lhs.ty
@@ -54,10 +56,10 @@ proc visit(node: Node) =
     node.ty = node.lhs.ty
     return
   of NdAddr:
-    node.ty = pointerTo(node.lhs.ty)
+    node.ty = pointerTo(node.lhs.ty)    # baseとなるty型を渡す
     return
   of NdDeref:
-    if node.lhs.ty.kind == TyPtr:
+    if node.lhs.ty.kind == TyPtr:   # ポインタならbaseを渡す
       node.ty = node.lhs.ty.base
     else:
       node.ty = intType()

@@ -28,6 +28,8 @@
 - Local variables
 - Control syntax (if, while, for)
 - Compound statement (Block)
+- Pointer
+- Primitive data eype (int)
 
 ## Reference
 - https://github.com/rui314/9cc

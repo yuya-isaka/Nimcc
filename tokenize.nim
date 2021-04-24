@@ -34,10 +34,10 @@ proc isAlnum(c: string): bool =
   return isAlpha(c) or ("0" <= c and c <= "9")
 
 # 予約語をチェック
-proc checkReserved(cur: var Token): (string, bool) = #! tupleを返す
+proc checkReserved(cur: var Token): (string, bool) =                  #! tupleを返す
 
     # "return", "if", "else"
-    var strList1 = ["return", "if", "else", "while", "for", "int"] #! arrayになります
+    var strList1 = ["return", "if", "else", "while", "for", "int"]    #! arrayになる
     for tmp in strList1:
       var tmpStr: string = $input[idx]
       var tmpIdx: int = idx+1
@@ -45,7 +45,7 @@ proc checkReserved(cur: var Token): (string, bool) = #! tupleを返す
         if len(input) > tmpIdx:
           tmpStr.add($input[tmpIdx])
           inc(tmpIdx)
-      if tmpStr == tmp and not isAlnum($input[tmpIdx]): #! returnxとかifxとかの記述を禁止する
+      if tmpStr == tmp and not isAlnum($input[tmpIdx]):               #! returnxとかifxとかの記述を禁止する
         return (tmpStr, true)
 
     # こっちを先
@@ -65,14 +65,14 @@ proc checkReserved(cur: var Token): (string, bool) = #! tupleを返す
 
     return ("", false)
 
-#---------------------------------------------------------------------------------------
+#? ------------------------------------------------------------------------------------------------
 
 # 入力文字列inputをトークナイズして返す
 proc tokenize*(): Token =
-  # 連結リスト作成
-  var head: Token = new Token   # 参照型のオブジェクト生成（ヒープ領域に確保）
+
+  var head: Token = new Token                       # 参照型のオブジェクト生成（ヒープ領域に確保）
   head.next = nil
-  var cur = head    # 参照のコピーなので，実体は同じもの
+  var cur = head                                    # 参照のコピーなので，実体は同じもの
 
   while len(input) > idx:
 
@@ -82,10 +82,10 @@ proc tokenize*(): Token =
       continue
 
     # 予約語(こいつは先に)
-    var tmpStr = checkReserved(cur) #! TkReservedに関するトークン作成はこの関数で!
+    var tmpStr = checkReserved(cur)                 #! TkReservedに関するトークン作成はこの関数で!
     if tmpStr[1]:
       cur = newToken(TkReserved, cur, tmpStr[0])
-      idx += len(tmpStr[0]) # 読んだ文字列文インデックスを進める
+      idx += len(tmpStr[0])                         # 読んだ文字列文インデックスを進める
       continue
 
     # 識別子，変数

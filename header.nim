@@ -1,6 +1,6 @@
 
 #[
-  * enum, object, グローバル変数, 入力文字列, ライブラリ関数(errorAt) などを管理
+  ? enum, object, グローバル変数, 入力文字列, ライブラリ関数(errorAt) などを管理
 ]#
 
 import os

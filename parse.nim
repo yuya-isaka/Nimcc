@@ -221,13 +221,13 @@ proc readExprStmt(): Node =
   var tok = token                                                       # この関数を呼び出すときはconsumeでtokenの連結が進められないから．現在参照している部分を見ればいい
   return newNode(NdExprStmt, expr(), tok)
 
-# stmt = "return" expr ";"
-#      | "if" "(" expr ")" stmt ("else" stmt)?
-#      | "while" "(" expr ")" stmt
-#      | "for" "(" expr? ";" expr? ";" expr? ")" stmt
-#      | "{" stmt* "}"
-#      | declaration
-#      | expr ";"
+#? stmt = "return" expr ";"
+#?      | "if" "(" expr ")" stmt ("else" stmt)?
+#?      | "while" "(" expr ")" stmt
+#?      | "for" "(" expr? ";" expr? ";" expr? ")" stmt
+#?      | "{" stmt* "}"
+#?      | declaration
+#?      | expr ";"
 proc stmt(): Node =
   if consume("return"):
     var node = newNode(NdReturn, expr(), tokPrev)

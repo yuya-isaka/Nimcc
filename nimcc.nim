@@ -1,6 +1,6 @@
 
 #[
-  * トークナイズ　→　パース　→　アセンブリ
+  * トークナイズ　->　パース　(-> 型付け -> オフセット計算)　-> アセンブリ
 ]#
 
 import header
@@ -9,25 +9,24 @@ import parse
 import codegen
 import tokenize
 
-# メイン関数
 proc main() =
 
   # *トークナイズ
-  token = tokenize() # グローバル変数tokenにセット
+  token = tokenize()
 
   # *パース
   var prog: Function = program()
 
-  # *型情報付与
+  # *型付け
   addType(prog)
 
   # *オフセット計算
   var fn: Function = prog
-  while fn != nil:   #! Functionループ
+  while fn != nil:
 
     var offset = 0
-    var vl: LvarList = fn.locals  #! 引数＋ローカル変数のためのオフセットを計算
-    while vl != nil:   #! ローカル変数ループ
+    var vl: LvarList = fn.locals      #! 引数,ローカル変数のためのオフセットを計算
+    while vl != nil:                  #! ローカル変数ループ
       offset += 8
       vl.lvar.offset = offset
       vl = vl.next
@@ -35,11 +34,10 @@ proc main() =
     fn.stackSize = offset
     fn = fn.next
 
-
   # *アセンブリ生成
   codegen(prog)
   quit(0)
 
-#---------------------------------------------------------
-
+#? --------------------------------------------------------------------------------------
+# entry point
 main()

@@ -42,7 +42,7 @@ proc expectNumber(): int =
 proc atEof(): bool =
   return token.kind == TkEof
 
-# 変数チェック1
+# ?変数チェック1
 proc consumeIdent(): (Token, bool) =
   if token.kind != TkIdent:
     return (nil, false)                                         # よくみたらここでnil返してるやんけ!!!
@@ -51,7 +51,7 @@ proc consumeIdent(): (Token, bool) =
   token = token.next
   return (tmpTok, true)
 
-# 変数チェック2
+# ?変数チェック2
 proc expectIdent(): string =
   if token.kind != TkIdent:
     errorAt("識別子ではありません", token)
@@ -84,41 +84,41 @@ proc pushLvar(name: string, ty: Type): Lvar =
   return lvar
 
 #? 多重ディスパッチ, オーバーロード---------------------------------------------------------------------------------
-#* kind(全ての元となる), こいつ単体では何の値も持っていない
+#? kind(全ての元となる), こいつ単体では何の値も持っていない
 proc newNode(kind: NodeKind, tok: Token): Node =
   var node = new Node
   node.kind = kind
   node.tok = tok
   return node
 
-#* kind, lhs, rhs
+#? kind, lhs, rhs
 proc newNode(kind: NodeKind, lhs: Node, rhs: Node, tok: Token): Node =
   var node: Node = newNode(kind, tok)
   node.lhs = lhs
   node.rhs = rhs
   return node
 
-#* kind, lhs
+#? kind, lhs
 # NdReturn, NdExprStmt用 （;で終わるものを扱う)
 proc newNode(kind: NodeKind, lhs: Node, tok: Token): Node =
   var node: Node = newNode(kind, tok)
   node.lhs = lhs
   return node
 
-#* val
+#? val
 proc newNode(val: int, tok: Token): Node =
   var node: Node = newNode(NdNum, tok)
   node.val = val
   return node
 
-#* lvar 
+#? lvar 
 proc newNode(lvar: Lvar, tok: Token): Node =
   var node = newNode(NdLvar, tok)
   node.lvar = lvar
   return node
 
 #? ---------------------------------------------------------------------------------------------------------
-# 優先度低い順
+#! 優先度低い順
 proc program*(): Function
 proc function(): Function
 proc declaration(): Node

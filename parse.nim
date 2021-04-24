@@ -130,6 +130,7 @@ proc relational(): Node
 proc add(): Node
 proc mul(): Node
 proc unary(): Node
+proc primaryArray(): Node
 proc primary(): Node
 
 #? program = function*
@@ -145,18 +146,29 @@ proc program*(): Function =
   return head.next
 
 #? basetype = "int" "*"*
-proc basetype(): Type =
+proc basetype(): Type =                                                 #! 現状baseの型はintのみ
   expect("int")
   var ty: Type = intType()
   while consume("*"):
-    ty = pointerTo(ty)
+    ty = pointerType(ty)
   return ty
+
+proc readTypeSuffix(base: var Type): Type =
+  if not consume("["):
+    return base
+  var size = expectNumber()
+  expect("]")
+  base = readTypeSuffix(base)                                           #! int a[3][3] のような多次元配列に対応（再帰）
+  return arrayType(base, size)
 
 #? 関数の引数を読む！！
 proc readFuncParam(): LvarList =
+  var ty: Type = basetype()                                             #! 現状baseの型はintのみ
+  var name = expectIdent()
+  ty = readTypeSuffix(ty)                                               #! 配列の可能性を考慮
+
   var vl = new LvarList
-  var ty: Type = basetype()
-  vl.lvar = pushLvar(expectIdent(), ty)                                 #! 関数の引数をlocalsに追加
+  vl.lvar = pushLvar(name, ty)                                          #! 関数の引数をlocalsに追加
   return vl
 
 #? 関数の引数を読む！！
@@ -200,11 +212,13 @@ proc function(): Function =
   fn.locals = locals                                                    #! 引数,ローカル変数の連結リストの先頭取得
   return fn
 
-#? declaration = basetype ident ("=" expr) ";"
+#? declaration = basetype ident ("[" num "]")* ("=" expr) ";"
 proc declaration(): Node =
   var tok = token
   var ty = basetype()
-  var lvar = pushLvar(expectIdent(), ty)                                #! ローカル変数をlocalsに追加〜〜〜
+  var name = expectIdent()
+  ty = readTypeSuffix(ty)                                               #! 配列の可能性を考慮
+  var lvar = pushLvar(name, ty)                                         #! 型付けされたローカル変数をlocalsに追加〜〜〜
 
   if consume(";"):                                                      #! 初期化されてない変数宣言
     return newNode(NdNull, tokPrev)
@@ -215,7 +229,6 @@ proc declaration(): Node =
   expect(";")
   var node: Node = newNode(NdAssign, lhs, rhs, tok)                     #! 代入処理，　int a = 3;
   return newNode(NdExprStmt, node, tok)                                 #! 代入では評価結果をスタックに残す必要はない, 式の文
-
 
 proc readExprStmt(): Node =
   var tok = token                                                       # この関数を呼び出すときはconsumeでtokenの連結が進められないから．現在参照している部分を見ればいい
@@ -344,7 +357,8 @@ proc mul(): Node =
     else:
       return node
 
-#? unary = ("+" | "-" | "&" | "*" )? unary | primary
+#? unary = ("+" | "-" | "&" | "*" )? unary 
+#?         | primaryArray
 proc unary(): Node =
   if consume("+"):
     return unary()                                                        # これ忘れてた．．++とかもそりゃいいよね
@@ -358,7 +372,18 @@ proc unary(): Node =
   if consume("*"):
     return newNode(NdDeref, unary(), tokPrev)
 
-  return primary()
+  return primaryArray()
+
+#? primaryArray = primary ("[" expr "]")*
+proc primaryArray(): Node =
+  var node = primary()
+
+  while consume("["):
+    var exp = newNode(NdAdd, node, expr(), tokPrev)                       #! 左辺のnodeには識別子がくる． この左辺はNdLvarとして識別され，アドレス(RBP-offset)をゲットする．(これはロードしない) そのオフセットにexpr()で評価した数値を足すことで， 配列の要素にアクセスできる．
+    expect("]")
+    node = newNode(NdDeref, exp, tokPrev)                                 #! C言語では，配列は，アドレス経由にアクセスする．
+  
+  return node
 
 #? funcArgs =  "(" (assign ("," assign)*)? ")"
 #? 関数の引数を評価し返す -> node.argsで持つ
@@ -394,7 +419,7 @@ proc primary(): Node =
     #変数
     var tmpLvar = findLvar(tok[0])                                        # LvarList, bool
     if not tmpLvar[1]:
-      # tmpLvar[0] = pushLvar(tok[0].str)                                 # 昔はここで変数をlocalsに追加してた．　今は上の方でintを見つけた瞬間に格納している．
+                                                                          # tmpLvar[0] = pushLvar(tok[0].str)  # 昔はここで変数をlocalsに追加してた．　今は上の方でintを見つけた瞬間に格納している．
       errorAt("undefined variable", tok[0])                               #! ここで見たことない変数が来るのはおかしいからエラー
     return newNode(tmpLvar[0], tokPrev)                                   #! 見たことあるなら，それを格納
 

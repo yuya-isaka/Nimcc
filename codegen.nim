@@ -4,6 +4,7 @@
 ]#
 
 import header
+import typer
 import strformat
 
 #? ---------------------------------------------------------------------------------------------------------
@@ -27,6 +28,11 @@ proc genAddr(node: Node) =                                #! 左辺値生成（�
     return
   else:
     errorAt("not an lvalue", node.tok)                    #! Token型を渡す設計にすることで， コードジェネレートの際のエラー位置を正確に確認できるようになった（本当か
+
+proc genLval(node: Node) =
+  if node.ty.kind == TyArray:                             #! 配列へのアクセスはデリファレンス経由じゃないとだめってこと？？
+    errorAt("not an lvalue", node.tok)
+  genAddr(node)
 
 #? 変数取り出し
 proc load() =                                            
@@ -56,10 +62,11 @@ proc gen(node: Node) =
     return
   of NdLvar:                                              #? 変数利用
     genAddr(node)                                         #! 変数を右辺値として扱う場合は， まず左辺値として評価
-    load()                                                #! スタックトップにある結果をアドレスとみなして，そのアドレスから値をロード
+    if node.ty.kind != TyArray:
+      load()                                              #! スタックトップにある結果をアドレスとみなして，そのアドレスから値をロード
     return
   of NdAssign:                                            #? 代入
-    genAddr(node.lhs)                                     #! 左辺値からアドレス生成
+    genLval(node.lhs)                                     #! 左辺値からアドレス生成(配列はエラー, デリファレンス経由じゃないとだめ？)
     gen(node.rhs)                                         #! 右辺値としてコンパイルして結果を生成
     store()                                               #! スタックトップに値があるから，それを左辺値のアドレスに代入
     return
@@ -68,57 +75,58 @@ proc gen(node: Node) =
     return
   of NdDeref:                                             #? デリファレンス
     gen(node.lhs)                                         #! 右辺値としてコンパイル. ->　何らかのアドレスを計算するコードに変換されるはず(そうでなければその結果をデリファレンスすることはできない．その場合はエラーにする） -> 最終的にgenAddrをどこかで呼び出すということ
-    load()                                                #! 何らかのアドレスを計算した後， スタックに評価結果を残す， それをロード
+    if node.ty.kind != TyArray:
+      load()                                              #! 何らかのアドレスを計算した後， スタックに評価結果を残す， それをロード
     return
   of NdIf:
-    var seq = labelSeq                                    #! ラベル番号はユニークにする
+    var label = labelSeq                                  #! ラベル番号はユニークにする
     inc(labelSeq)
     if node.els != nil:
       gen(node.cond)
       echo "  pop rax"
       echo "  cmp rax, 0"
-      echo fmt"  je .Lelse{seq}"
+      echo fmt"  je .Lelse{label}"
       gen(node.then)
-      echo fmt"  jmp .Lend{seq}"
-      echo fmt".Lelse{seq}:"                              #! :を付け忘れた覚書
+      echo fmt"  jmp .Lend{label}"
+      echo fmt".Lelse{label}:"                            #! :を付け忘れた覚書
       gen(node.els)
-      echo fmt".Lend{seq}:"
+      echo fmt".Lend{label}:"
     else:
       gen(node.cond)
       echo "  pop rax"
       echo "  cmp rax, 0"
-      echo fmt"  je .Lend{seq}"
+      echo fmt"  je .Lend{label}"
       gen(node.then)
-      echo fmt".Lend{seq}:"
+      echo fmt".Lend{label}:"
     return
   of NdWhile:
-    var seq = labelSeq
+    var label = labelSeq
     inc(labelSeq)
-    echo fmt".Lbegin{seq}:"
+    echo fmt".Lbegin{label}:"
     gen(node.cond)
     echo "  pop rax"
     echo "  cmp rax, 0"
-    echo fmt"   je .Lend{seq}"
+    echo fmt"   je .Lend{label}"
     gen(node.then)                                        #! node.thenはExprStmt()にラップされてるから，スタックトップに値は残らない
-    echo fmt"   jmp .Lbegin{seq}"
-    echo fmt".Lend{seq}:"
+    echo fmt"   jmp .Lbegin{label}"
+    echo fmt".Lend{label}:"
     return                                                #! return忘れてた覚書
   of NdFor:
-    var seq = labelSeq
+    var label = labelSeq
     inc(labelSeq)
     if node.init != nil:
       gen(node.init)
-    echo fmt".Lbegin{seq}:"
+    echo fmt".Lbegin{label}:"
     if node.cond != nil:
       gen(node.cond)
       echo "  pop rax"
       echo "  cmp rax, 0"
-      echo fmt"   je .Lend{seq}"
+      echo fmt"   je .Lend{label}"
     gen(node.then)
     if node.inc != nil:
       gen(node.inc)
-    echo fmt"   jmp .Lbegin{seq}"
-    echo fmt".Lend{seq}:"
+    echo fmt"   jmp .Lbegin{label}"
+    echo fmt".Lend{label}:"
     return
   of NdBlock:                                             # {}の中身はひたすら生成, body: seq[Node]
     for tmp in node.body:
@@ -139,21 +147,21 @@ proc gen(node: Node) =
       echo fmt"  pop {argreg[i]}"                         #! 順番にスタックからPOP(ABI仕様), ついでにRSPが関数の開始位置(RBP)まで戻る
       dec(i)                                              # これで空白のRBP以下が埋められた
 
-    var seq = labelSeq
+    var label = labelSeq
     inc(labelSeq)
     echo "  mov rax, rsp"                                 #! 関数呼び出しの前にRSPは16の倍数じゃないとダメ！
     echo "  and rax, 15"                                  #! 関数を呼ぶ前にRSPを16の倍数になるように調整(PUSHやPOPはRSPを8バイト単位で変更するから、call命令を発行するときに必ずしもRSPが16の倍数になっているとは限らん)
                                                           #! and 15, 15 -> 15   and 16, 15 -> 0   and 17, 15 -> 1
-    echo fmt"  jnz .Lcall{seq}"                           #! 比較結果!=0で飛ぶ(RAXが16の倍数じゃない場合飛ぶ)
+    echo fmt"  jnz .Lcall{label}"                         #! 比較結果!=0で飛ぶ(RAXが16の倍数じゃない場合飛ぶ)
     echo "  mov rax, 0" 
     echo fmt"  call {node.funcname}"
-    echo fmt"  jmp .Lend{seq}"
-    echo fmt".Lcall{seq}:"                                #! jnz .Lcallで飛んでくる
+    echo fmt"  jmp .Lend{label}"
+    echo fmt".Lcall{label}:"                              #! jnz .Lcallで飛んでくる
     echo "  sub rsp, 8"                                   #! スタックを伸ばす(RSPが16の倍数になるように調整)
     echo "  mov rax, 0"                                   #! RAX初期化 
     echo fmt"  call {node.funcname}"
     echo "  add rsp, 8"                                   #! スタックを縮ませ元に戻す
-    echo fmt".Lend{seq}:"
+    echo fmt".Lend{label}:"
     echo "  push rax"                                     #! 評価結果を格納
     return
   of NdReturn:
@@ -170,14 +178,14 @@ proc gen(node: Node) =
   echo "  pop rdi"
   echo "  pop rax"
 
-  case node.kind                                          #todo 計算&比較ふぇーーーーーーーーーず(returnせず，スタックに値を保存するだけ)
+  case node.kind                                          #? 計算&比較ふぇーーーーーーーーーず(returnせず，スタックに値を保存するだけ)
   of NdAdd:
-    if node.ty.kind == TyPtr:
-      echo "  imul rdi, 8"                                #! rdi = rdi * 8  ローカル変数は8バイトずつ並べてるから，ポインタの時，+1は+8と設定
+    if node.ty.base != nil:
+      echo fmt"  imul rdi, {sizeType(node.ty.base)}"                                #! rdi = rdi * {}  
     echo "  add rax, rdi"
   of NdSub:
-    if node.ty.kind == TyPtr:
-      echo "  imul rdi, 8"
+    if node.ty.base != nil:
+      echo fmt"  imul rdi, {sizeType(node.ty.base)}"
     echo "  sub rax, rdi"
   of NdMul:
     echo "  imul rax, rdi"

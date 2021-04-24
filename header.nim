@@ -40,13 +40,15 @@ var token*: Token = nil
 type
   TypeKind* = enum
     TyInt,
-    TyPtr
+    TyPtr,
+    TyArray
 
 # Type型
 type
   Type* = ref object
     kind*: TypeKind       # 型の種類
     base*: Type           # TyPtrの時, 対象変数
+    arraySize*: int       # typerで配列のサイズを計算するときに使う
 
 #? ------------------------------------------------------------------------------------
 # ローカル変数の型

@@ -84,7 +84,7 @@ proc pushLvar(name: string, ty: Type): Lvar =
   return lvar
 
 #? 多重ディスパッチ, オーバーロード---------------------------------------------------------------------------------
-#* kind
+#* kind(全ての元となる), こいつ単体では何の値も持っていない
 proc newNode(kind: NodeKind, tok: Token): Node =
   var node = new Node
   node.kind = kind

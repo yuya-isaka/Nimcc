@@ -1,6 +1,6 @@
 
 #[
-  * トークナイズ　->　パース　(-> 型付け -> オフセット計算)　-> アセンブリ
+  ? トークナイズ　->　パース　(-> 型付け -> オフセット計算)　-> アセンブリ
 ]#
 
 import header
@@ -11,16 +11,16 @@ import tokenize
 
 proc main() =
 
-  # *トークナイズ
+  #? トークナイズ
   token = tokenize()
 
-  # *パース
+  #? パース
   var prog: Function = program()
 
-  # *型付け
+  #? 型付け
   addType(prog)
 
-  # *オフセット計算
+  #? オフセット計算
   var fn: Function = prog
   while fn != nil:
 
@@ -34,7 +34,7 @@ proc main() =
     fn.stackSize = offset
     fn = fn.next
 
-  # *アセンブリ生成
+  #? アセンブリ生成
   codegen(prog)
   quit(0)
 

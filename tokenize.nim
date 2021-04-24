@@ -75,19 +75,19 @@ proc tokenize*(): Token =
 
   while len(input) > idx:
 
-    # 空白飛ばし
+    #? 空白飛ばし
     if isSpaceAscii(input[idx]):
       inc(idx)
       continue
 
-    # 予約語(こいつは先に)
+    #? 予約語(こいつは先に)
     var tmpStr = checkReserved(cur)                 #! TkReservedに関するトークン作成はこの関数で!
     if tmpStr[1]:
       cur = newToken(TkReserved, cur, tmpStr[0])
       idx += len(tmpStr[0])                         # 読んだ文字列文インデックスを進める
       continue
 
-    # 識別子，変数
+    #? 識別子
     if isAlpha($input[idx]):
       var tmpStr: string = $input[idx]
       inc(idx)
@@ -97,7 +97,7 @@ proc tokenize*(): Token =
       cur = newToken(TkIdent, cur, tmpStr)
       continue
 
-    # 数値
+    #? 数値
     if isDigit(input[idx]):
       var str: string = checkNum()
       cur = newToken(TkNum, cur, $input[idx])

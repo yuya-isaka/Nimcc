@@ -41,7 +41,7 @@ proc checkReserved(cur: var Token): (string, bool) =                  #! tuple�
     for tmp in strList1:
       var tmpStr: string = $input[idx]
       var tmpIdx: int = idx+1
-      for _ in 1..len(tmp)-1: # TODO間違えた箇所覚書
+      for _ in 1..len(tmp)-1:                                         # 間違えた箇所覚書
         if len(input) > tmpIdx:
           tmpStr.add($input[tmpIdx])
           inc(tmpIdx)

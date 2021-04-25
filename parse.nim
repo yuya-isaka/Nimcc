@@ -1,6 +1,6 @@
 
 #[
-  ? 目的：トークン列を先頭からパースし，「Node型の連結リスト」に変換
+  ? 目的：tokenを先頭からパースし，「Node型の連結リスト」に変換
   ? サブ目的：「LvarList型の連結リスト」を生成（変数用）
 ]#
 
@@ -9,6 +9,7 @@ import typer
 import strformat
 
 var locals: LvarList                                            #! ローカル変数（連結リスト）
+var globals: LvarList                                           #! グローバル変数（連結リスト）
 
 var tokPrev: Token = nil                                        #! エラー表示用！　consumeで進める前のTokenを保持．　エラー表示に使える．　グローバル変数は使い所考えると有益
 
@@ -63,24 +64,37 @@ proc expectIdent(): string =
 #? ---------------------------------------------------------------------------------------------------------
 # 既に登録されている変数がチェック
 proc findLvar(tok: Token): (Lvar, bool) =                       #! tupleを返す(この設計は直さないといけん)
+  #? ローカル変数チェク
   var vl: LvarList = locals
   while vl != nil:
     var lvar = vl.lvar
     if lvar.name == tok.str:
       return (lvar, true)
     vl = vl.next
+
+  #? グローバル変数チェック
+  vl = globals
+  while vl != nil:
+    var lvar = vl.lvar
+    if lvar.name == tok.str:
+      return (lvar, true)
   return (nil, false)                                           #! 一度バグって何も動かなくなった．ここでnilを返すように変更したのが良かった．（初期化されていないオブジェクトを返そうとしていた？）
 
-# ローカル変数の連結リストに追加
-proc pushLvar(name: string, ty: Type): Lvar =
+# 変数の連結リストに追加
+proc pushLvar(name: string, ty: Type, isLocal: bool): Lvar =
   var lvar = new Lvar
   lvar.name = name
   lvar.ty = ty
+  lvar.isLocal = isLocal
 
   var vl = new LvarList
   vl.lvar = lvar
-  vl.next = locals
-  locals = vl
+  if isLocal:                          #! ローカル変数 
+    vl.next = locals
+    locals = vl
+  else:                                #! グローバル変数
+    vl.next = globals
+    globals = vl
   return lvar
 
 #? 多重ディスパッチ, オーバーロード---------------------------------------------------------------------------------
@@ -119,8 +133,10 @@ proc newNode(lvar: Lvar, tok: Token): Node =
 
 #? ---------------------------------------------------------------------------------------------------------
 #! 優先度低い順
-proc program*(): Function
+proc program*(): Program
 proc function(): Function
+proc basetype(): Type
+proc globalLvar(): void
 proc declaration(): Node
 proc stmt(): Node
 proc expr(): Node
@@ -133,17 +149,32 @@ proc unary(): Node
 proc primaryArray(): Node
 proc primary(): Node
 
-#? program = function*
-proc program*(): Function =
+proc isFunction(): bool =
+  var tok = token
+  discard basetype()
+  var tmp = consumeIdent()
+  var isFunc: bool = tmp[1] and consume("(")
+  token = tok                                                         #! トークン元に戻す（関数かどうか事前にチェックするだけで， tokenは進めない）
+  return isFunc
+
+#? program = (global-lvar | function)*
+proc program*(): Program =
   var head = new Function
   head.next = nil
   var cur: Function = head
+  globals = nil
 
   while not atEof():
-    cur.next = function()
-    cur = cur.next
+    if isFunction():
+      cur.next = function()
+      cur = cur.next
+    else:
+      globalLvar()
   
-  return head.next
+  var prog = new Program
+  prog.globals = globals
+  prog.fns = head.next
+  return prog
 
 #? basetype = "int" "*"*
 proc basetype(): Type =                                                 #! 現状baseの型はintのみ
@@ -168,7 +199,7 @@ proc readFuncParam(): LvarList =
   ty = readTypeSuffix(ty)                                               #! 配列の可能性を考慮
 
   var vl = new LvarList
-  vl.lvar = pushLvar(name, ty)                                          #! 関数の引数をlocalsに追加
+  vl.lvar = pushLvar(name, ty, true)                                          #! 関数の引数をlocalsに追加
   return vl
 
 #? 関数の引数を読む！！
@@ -212,13 +243,20 @@ proc function(): Function =
   fn.locals = locals                                                    #! 引数,ローカル変数の連結リストの先頭取得
   return fn
 
+proc globalLvar() =
+  var ty = basetype()
+  var name = expectIdent()
+  ty = readTypeSuffix(ty)
+  expect(";")
+  discard pushLvar(name, ty, false)
+
 #? declaration = basetype ident ("[" num "]")* ("=" expr) ";"
 proc declaration(): Node =
   var tok = token
   var ty = basetype()
   var name = expectIdent()
   ty = readTypeSuffix(ty)                                               #! 配列の可能性を考慮
-  var lvar = pushLvar(name, ty)                                         #! 型付けされたローカル変数をlocalsに追加〜〜〜
+  var lvar = pushLvar(name, ty, true)                                   #! 型付けされたローカル変数をlocalsに追加〜〜〜
 
   if consume(";"):                                                      #! 初期化されてない変数宣言
     return newNode(NdNull, tokPrev)

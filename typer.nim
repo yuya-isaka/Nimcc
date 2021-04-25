@@ -31,7 +31,7 @@ proc arrayType*(base: Type, size: int): Type =
   return ty
 
 #? スタックで確保するバイト数
-proc sizeType*(ty: Type): int =
+proc sizeType*(ty: Type): int =                         # これよく書き間違える．．
   if ty.kind == TyInt or ty.kind == TyPtr:
     return 8    
   assert(ty.kind == TyArray)                            # 現状，intとptr以外はarray
@@ -106,8 +106,8 @@ proc visit(node: Node) =
 
 #? ------------------------------------------------------------------------------------
 #? annotate AST nodes with types
-proc addType*(prog: Function) =                                   #! ただの2重ループ(nodeの数だけvisit呼び出し)
-  var fn = prog 
+proc addType*(prog: Program) =                                   #! ただの2重ループ(nodeの数だけvisit呼び出し)
+  var fn = prog .fns
   while fn != nil:
     var node = fn.node
     while node != nil:

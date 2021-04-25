@@ -51,12 +51,13 @@ type
     arraySize*: int       # typerで配列のサイズを計算するときに使う
 
 #? ------------------------------------------------------------------------------------
-# ローカル変数の型
+# 変数の型
 type
   Lvar* = ref object
     name*: string
-    offset*: int
+    offset*: int                # offset from RBP
     ty*: Type
+    isLocal*: bool              #! ローカル変数かグローバル変数か
 
 # ローカル変数の連結リスト
 type
@@ -81,38 +82,38 @@ proc errorAt*(errorMsg: string, tok: Token) =
 # ノードの種類（AST）
 type
   NodeKind* = enum
-    NdAdd,              # +
-    NdSub,              # -
-    NdMul,              # \*
-    NdDiv,              # /
-    NdNum,              # 整数
-    NdEq,               # ==
-    NdNe,               # \!=
-    NdL,                # <
-    NdLe,               # <=
-    NdAssign,           # = 代入式
-    NdLvar,             # 変数
-    NdReturn,           # return
-    NdExprStmt,         # 式の文
-    NdIf,               # if
-    NdWhile,            # while
-    NdFor,              # for
-    NdBlock,            # compound statement
-    NdFuncall,          # function
-    NdAddr,             # pointer &
-    NdDeref,            # pointer *
-    NdNull,             # NULL
-    NdSizeof            # sizeof 
+    NdAdd,                      # +
+    NdSub,                      # -
+    NdMul,                      # \*
+    NdDiv,                      # /
+    NdNum,                      # 整数
+    NdEq,                       # ==
+    NdNe,                       # \!=
+    NdL,                        # <
+    NdLe,                       # <=
+    NdAssign,                   # = 代入式
+    NdLvar,                     # 変数
+    NdReturn,                   # return
+    NdExprStmt,                 # 式の文
+    NdIf,                       # if
+    NdWhile,                    # while
+    NdFor,                      # for
+    NdBlock,                    # compound statement
+    NdFuncall,                  # function
+    NdAddr,                     # pointer &
+    NdDeref,                    # pointer *
+    NdNull,                     # NULL
+    NdSizeof                    # sizeof 
 
 # ノード型
 type
   Node* = ref object
-    kind*: NodeKind     # ノードの種類
-    next*: Node         # 次のノード(連結リストで管理)
-    lhs*: Node          # 左辺
-    rhs*: Node          # 右辺
-    val*: int           # kindがNdNumの場合の数値
-    lvar*: Lvar         # kindがNdLvarの時
+    kind*: NodeKind             # ノードの種類
+    next*: Node                 # 次のノード(連結リストで管理)
+    lhs*: Node                  # 左辺
+    rhs*: Node                  # 右辺
+    val*: int                   # kindがNdNumの場合の数値
+    lvar*: Lvar                 # kindがNdLvarの時
 
     # kindがNdIf,NdWhileの時
     cond*: Node
@@ -142,8 +143,13 @@ type Function* = ref object
   next*: Function
   name*: string
   params*: LvarList
-  node*: Node       #! 複数ノード連結リストの先頭
-  locals*: LvarList     #! ローカル変数連結リストの先頭
-  stackSize*: int   # ローカル変数に用いたスタックサイズ
+  node*: Node                             #! 複数ノード連結リストの先頭
+  locals*: LvarList                       #! ローカル変数連結リストの先頭
+  stackSize*: int                         # ローカル変数に用いたスタックサイズ
 
-var program*: Function
+#? ------------------------------------------------------------------------------------
+# var program*: Function 昔はこれだった
+type
+  Program* = ref object
+    globals*: LvarList                    #! 連結リスト
+    fns*: Function                        #! 連結リスト

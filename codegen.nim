@@ -20,8 +20,13 @@ proc gen(node: Node)
 proc genAddr(node: Node) =                                #! 左辺値生成（アドレス返すってこと）, C言語の左辺値は基本的にメモリのアドレスを指定する式
   case node.kind:
   of NdLvar:
-    echo fmt"  lea rax, [rbp-{node.lvar.offset}]"         #! アドレス計算を行うが，メモリアクセスは行わず，アドレス計算の結果そのもの(アドレス）をraxに代入
-    echo "  push rax"                                     #! raxにはアドレスが入ってる!!!重要だよ！！（評価結果じゃないんだよ！）
+    var lvar = node.lvar
+
+    if lvar.isLocal:
+      echo fmt"  lea rax, [rbp-{lvar.offset}]"             #! アドレス計算を行うが，メモリアクセスは行わず，アドレス計算の結果そのもの(アドレス）をraxに代入
+      echo "  push rax"                                   #! raxにはアドレスが入ってる!!!重要だよ！！（評価結果じゃないんだよ！）
+    else:
+      echo fmt"  push offset {lvar.name}"
     return
   of NdDeref:
     gen(node.lhs)                                         #! *p = 3 のようにデリファレンス経由で値を代入するときに対応するため， pのアドレスが生成されるように左辺値をコンパイル
@@ -214,10 +219,20 @@ proc gen(node: Node) =
   echo "  push rax"                                       #! 式全体の結果を，スタックトップにプッシュ
 
 #? ---------------------------------------------------------------------------------------------------------
-proc codegen*(prog: Function) =                           # 完成形アセンブリ出力関数
-  echo ".intel_syntax noprefix"                           # 始まり
+proc emitData(prog: Program) =                           # 完成形アセンブリ出力関数
+  echo ".data"
 
-  var fn = prog
+  var vl = prog.globals
+  while vl != nil:
+    var lvar = vl.lvar
+    echo fmt"{lvar.name}:"
+    echo fmt"  .zero {sizeType(lvar.ty)}"
+    vl = vl.next
+
+proc emitText(prog: Program) =
+  echo ".text"
+
+  var fn = prog.fns
   while fn != nil:
     echo fmt".global {fn.name}"                           # macだと_mainで動く
     echo fmt"{fn.name}:"
@@ -250,3 +265,8 @@ proc codegen*(prog: Function) =                           # 完成形アセン�
     echo "  ret"                                          #! スタックからアドレスを一つポップ(リターンアドレスのはず），　そのアドレスにジャンプ
 
     fn = fn.next
+
+proc codegen*(prog: Program) =
+  echo ".intel_syntax noprefix"
+  emitData(prog)
+  emitText(prog)

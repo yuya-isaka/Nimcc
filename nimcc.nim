@@ -17,13 +17,13 @@ proc main() =
   token = tokenize()
 
   #? パース(識別子はここで型付け)
-  var prog: Function = program()
+  var prog: Program = program()
 
   #? ノードに型付け
   addType(prog)
 
   #? オフセット計算
-  var fn: Function = prog
+  var fn: Function = prog.fns
   while fn != nil:                    # 関数ループ
     var offset = 0
     var vl: LvarList = fn.locals      #! 引数,ローカル変数のためのオフセットを計算

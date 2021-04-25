@@ -16,6 +16,23 @@ assert() {
     fi
 }
 
+assert2() {
+    expected="$1"
+    input="$2"
+
+    ./nimcc "$input" > tmp.s
+    cc -static -o tmp tmp.s
+    ./tmp
+    actual="$?"
+
+    if [ "$actual" = "$expected" ]; then
+        echo "$input => $actual"
+    else
+        echo "$input => $expected expected, but got $actual"
+        exit 1
+    fi
+}
+
 nim c nimcc.nim
 
 assert 0 'int main() { return 0; }'
@@ -127,5 +144,15 @@ assert 8 'int main() { int x[3][4]; return sizeof(**x); }'
 assert 9 'int main() { int x[3][4]; return sizeof(**x) + 1; }'
 assert 9 'int main() { int x[3][4]; return sizeof **x + 1; }'
 assert 8 'int main() { int x[3][4]; return sizeof(**x + 1); }'
+
+assert2 0 'int x; int main() { return x; }'
+assert2 3 'int x; int main() { x=3; return x; }'
+assert2 0 'int x[4]; int main() { x[0]=0; x[1]=1; x[2]=2; x[3]=3; return x[0]; }'
+assert2 1 'int x[4]; int main() { x[0]=0; x[1]=1; x[2]=2; x[3]=3; return x[1]; }'
+assert2 2 'int x[4]; int main() { x[0]=0; x[1]=1; x[2]=2; x[3]=3; return x[2]; }'
+assert2 3 'int x[4]; int main() { x[0]=0; x[1]=1; x[2]=2; x[3]=3; return x[3]; }'
+
+assert2 8 'int x; int main() { return sizeof(x); }'
+assert2 32 'int x[4]; int main() { return sizeof(x); }'
 
 echo OK

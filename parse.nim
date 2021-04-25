@@ -416,7 +416,7 @@ proc primaryArray(): Node =
   while consume("["):
     var exp = newNode(NdAdd, node, expr(), tokPrev)                       #! 左辺のnodeには識別子がくる． この左辺はNdLvarとして識別され，アドレス(RBP-offset)をゲットする．(これはロードしない) そのオフセットにexpr()で評価した数値を足すことで， 配列の要素にアクセスできる．
     expect("]")
-    node = newNode(NdDeref, exp, tokPrev)                                 #! C言語では，配列は，アドレス経由にアクセスする．
+    node = newNode(NdDeref, exp, tokPrev)                                 #! C言語では，配列は，ポインタ経由にアクセスする．
   
   return node
 

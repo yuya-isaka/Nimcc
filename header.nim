@@ -6,7 +6,7 @@
 import os
 import strutils
 
-# 入力文字列準備
+#? 入力文字列準備
 var idx* = 0
 var input*: seq[char]
 if paramCount() != 1:
@@ -14,8 +14,7 @@ if paramCount() != 1:
 for i in commandLineParams()[0]:
   input.add(i)
 
-#? ------------------------------------------------------------------------------------
-# トークンの種類
+#? トークンの種類
 type
   TokenKind* = enum
     TkReserved,           # 記号
@@ -23,7 +22,7 @@ type
     TkNum,                # 整数トークン
     TkEof                 # 入力の終わりを表すトークン
 
-# トークン型
+#? トークン型
 type
   Token* = ref object
     kind*: TokenKind      # トークンの種類
@@ -32,26 +31,24 @@ type
     str*: string          # トークン文字列
     at*: int              # 入力文字配列のうち，どこを指しているか（先頭インデックス）
 
-# 現在着目しているトークン
+#? 現在着目しているトークン
 var token*: Token = nil
 
-#? ------------------------------------------------------------------------------------
-# 型の種類
+#? 型の種類
 type
   TypeKind* = enum
     TyInt,
     TyPtr,
     TyArray
 
-# Type型
+#? Type型
 type
   Type* = ref object
     kind*: TypeKind       # 型の種類
     base*: Type           # TyPtrの時, 対象変数
     arraySize*: int       # typerで配列のサイズを計算するときに使う
 
-#? ------------------------------------------------------------------------------------
-# 変数の型
+#? 変数の型
 type
   Lvar* = ref object
     name*: string
@@ -59,13 +56,12 @@ type
     ty*: Type
     isLocal*: bool              #! ローカル変数かグローバル変数か
 
-# ローカル変数の連結リスト
+#? ローカル変数の連結リスト
 type
   LvarList* = ref object
     next*: LvarList
     lvar*: Lvar
 
-#? ------------------------------------------------------------------------------------
 # エラー表示関数（メッセージとトークンを受け取って，そのトークンの位置に値を挿入する)
 proc errorAt*(errorMsg: string, tok: Token) = 
   var tmp: string
@@ -78,8 +74,7 @@ proc errorAt*(errorMsg: string, tok: Token) =
     echo " ".repeat(tok.at) & "^"
   quit(errorMsg)
 
-#? ------------------------------------------------------------------------------------
-# ノードの種類（AST）
+#? ノードの種類（AST）
 type
   NodeKind* = enum
     NdAdd,                      # +
@@ -105,7 +100,7 @@ type
     NdNull,                     # NULL
     NdSizeof                    # sizeof 
 
-# ノード型
+#? ノード型
 type
   Node* = ref object
     kind*: NodeKind             # ノードの種類
@@ -137,8 +132,7 @@ type
     # 型情報
     ty*: Type
 
-#? ------------------------------------------------------------------------------------
-# 関数ごとに管理
+#? 関数ごとに管理
 type Function* = ref object
   next*: Function
   name*: string
@@ -147,8 +141,6 @@ type Function* = ref object
   locals*: LvarList                       #! ローカル変数連結リストの先頭
   stackSize*: int                         # ローカル変数に用いたスタックサイズ
 
-#? ------------------------------------------------------------------------------------
-# var program*: Function 昔はこれだった
 type
   Program* = ref object
     globals*: LvarList                    #! 連結リスト

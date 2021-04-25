@@ -37,7 +37,6 @@ proc sizeType*(ty: Type): int =                         # これよく書き間�
   assert(ty.kind == TyArray)                            # 現状，intとptr以外はarray
   return sizeType(ty.base) * ty.arraySize
 
-#? ------------------------------------------------------------------------------------
 proc visit(node: Node) =
   if node == nil:
     return
@@ -104,7 +103,6 @@ proc visit(node: Node) =
   else:
     discard
 
-#? ------------------------------------------------------------------------------------
 #? annotate AST nodes with types
 proc addType*(prog: Program) =                                   #! ただの2重ループ(nodeの数だけvisit呼び出し)
   var fn = prog .fns

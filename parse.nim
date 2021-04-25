@@ -10,10 +10,8 @@ import strformat
 
 var locals: LvarList                                            #! ローカル変数（連結リスト）
 var globals: LvarList                                           #! グローバル変数（連結リスト）
-
 var tokPrev: Token = nil                                        #! エラー表示用！　consumeで進める前のTokenを保持．　エラー表示に使える．　グローバル変数は使い所考えると有益
 
-#? ---------------------------------------------------------------------------------------------------------
 proc chirami(s: string): bool =
   if token.kind != TkReserved or token.str != s:
     return false
@@ -61,8 +59,7 @@ proc expectIdent(): string =
   token = token.next
   return val
 
-#? ---------------------------------------------------------------------------------------------------------
-# 既に登録されている変数がチェック
+#? 既に登録されている変数がチェック
 proc findLvar(tok: Token): (Lvar, bool) =                       #! tupleを返す(この設計は直さないといけん)
   #? ローカル変数チェク
   var vl: LvarList = locals
@@ -80,7 +77,7 @@ proc findLvar(tok: Token): (Lvar, bool) =                       #! tupleを返�
       return (lvar, true)
   return (nil, false)                                           #! 一度バグって何も動かなくなった．ここでnilを返すように変更したのが良かった．（初期化されていないオブジェクトを返そうとしていた？）
 
-# 変数の連結リストに追加
+#? 変数の連結リストに追加
 proc pushLvar(name: string, ty: Type, isLocal: bool): Lvar =
   var lvar = new Lvar
   lvar.name = name
@@ -97,7 +94,7 @@ proc pushLvar(name: string, ty: Type, isLocal: bool): Lvar =
     globals = vl
   return lvar
 
-#? 多重ディスパッチ, オーバーロード---------------------------------------------------------------------------------
+#? 多重ディスパッチ, オーバーロード
 #? kind(全ての元となる), こいつ単体では何の値も持っていない
 proc newNode(kind: NodeKind, tok: Token): Node =
   var node = new Node
@@ -131,7 +128,6 @@ proc newNode(lvar: Lvar, tok: Token): Node =
   node.lvar = lvar
   return node
 
-#? ---------------------------------------------------------------------------------------------------------
 #! 優先度低い順
 proc program*(): Program
 proc function(): Function

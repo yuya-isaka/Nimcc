@@ -14,16 +14,15 @@ if paramCount() != 1:
 for i in commandLineParams()[0]:
   input.add(i)
 
+
 #? トークン
-type
-  TokenKind* = enum
+type TokenKind* = enum
     TkReserved,           # 記号
     TkIdent,              # 識別子（変数）
     TkNum,                # 整数トークン
     TkEof                 # 入力の終わりを表すトークン
 
-type
-  Token* = ref object
+type Token* = ref object
     kind*: TokenKind      # トークンの種類
     next*: Token          # 次の入力トークン
     val*: int             # kindがTkNumの場合，その数値
@@ -32,8 +31,8 @@ type
 
 var token*: Token = nil
 
-# エラー表示関数（メッセージとトークンを受け取って，そのトークンの位置に値を挿入する)
 proc errorAt*(errorMsg: string, tok: Token) = 
+  # エラー表示関数（メッセージとトークンを受け取って，そのトークンの位置に値を挿入する)
   var tmp: string
   for i in input:
     tmp.add($i)
@@ -46,36 +45,31 @@ proc errorAt*(errorMsg: string, tok: Token) =
 
 
 #? 型
-type
-  TypeKind* = enum
+type TypeKind* = enum
     TyInt,
     TyPtr,
     TyArray
 
-type
-  Type* = ref object
+type Type* = ref object
     kind*: TypeKind       # 型の種類
     base*: Type           # TyPtrの時, 対象変数
     arraySize*: int       # typerで配列のサイズを計算するときに使う
 
 
 #? 変数
-type
-  Lvar* = ref object
+type Lvar* = ref object
     name*: string
     offset*: int                # offset from RBP
     ty*: Type
     isLocal*: bool              #! ローカル変数かグローバル変数か
 
-type
-  LvarList* = ref object
+type LvarList* = ref object
     next*: LvarList
     lvar*: Lvar
 
 
 #? ノード
-type
-  NodeKind* = enum
+type NodeKind* = enum
     NdAdd,                      # +
     NdSub,                      # -
     NdMul,                      # \*
@@ -99,8 +93,7 @@ type
     NdNull,                     # NULL
     NdSizeof                    # sizeof 
 
-type
-  Node* = ref object
+type Node* = ref object
     kind*: NodeKind             # ノードの種類
     next*: Node                 # 次のノード(連結リストで管理)
     lhs*: Node                  # 左辺
@@ -142,7 +135,6 @@ type Function* = ref object
 
 
 #? プログラム
-type
-  Program* = ref object
+type Program* = ref object
     globals*: LvarList                    #! 連結リスト
     fns*: Function                        #! 連結リスト

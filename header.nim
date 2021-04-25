@@ -52,11 +52,11 @@ type TypeKind* = enum
 
 type Type* = ref object
     kind*: TypeKind       # 型の種類
-    base*: Type           # TyPtrの時, 対象変数
+    base*: Type           # TyPtrの時, 対象変数, ポインタか配列じゃなかったら，ここはnilのはず！！！
     arraySize*: int       # typerで配列のサイズを計算するときに使う
 
 
-#? 変数
+#? 識別子（変数， 配列)->違いはty要素で管理
 type Lvar* = ref object
     name*: string
     offset*: int                # offset from RBP
@@ -126,15 +126,15 @@ type Node* = ref object
 
 #? 関数
 type Function* = ref object
-  next*: Function
-  name*: string
-  params*: LvarList
-  node*: Node                             #! 複数ノード連結リストの先頭
-  locals*: LvarList                       #! ローカル変数連結リストの先頭
-  stackSize*: int                         # ローカル変数に用いたスタックサイズ
+  next*: Function                         # 次
+  name*: string                           # 名前
+  params*: LvarList                       # 引数
+  node*: Node                             # ノード連結リストの先頭
+  locals*: LvarList                       # ローカル変数連結リストの先頭
+  stackSize*: int                         # 引数+ローカル変数に用いたスタックサイズ
 
 
 #? プログラム
 type Program* = ref object
-    globals*: LvarList                    #! 連結リスト
-    fns*: Function                        #! 連結リスト
+    globals*: LvarList                    # 連結リスト
+    fns*: Function                        # 連結リスト

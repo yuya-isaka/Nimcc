@@ -24,11 +24,11 @@ proc main() =
 
   #? オフセット計算
   var fn: Function = prog.fns
-  while fn != nil:                    # 関数ループ
+  while fn != nil:                      # 関数ループ
     var offset = 0
-    var vl: LvarList = fn.locals      #! 引数,ローカル変数のためのオフセットを計算
-    while vl != nil:                  # ローカル変数ループ
-      offset += sizeType(vl.lvar.ty)    #! 対象識別子(変数)の型で，確保するサイズを決める(intとptrは「8」, arrayは「type*size」)
+    var vl: LvarList = fn.locals        # 引数,ローカル変数のためのオフセットを計算
+    while vl != nil:                    # ローカル変数ループ
+      offset += sizeType(vl.lvar.ty)    # 対象識別子(変数)の型で，確保するサイズを決める(intとptrは「8」, arrayは「type*size」)
       vl.lvar.offset = offset
       vl = vl.next
     fn.stackSize = offset
@@ -38,5 +38,4 @@ proc main() =
   codegen(prog)
   quit(0)
 
-# entry point
 main()

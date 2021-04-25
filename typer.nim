@@ -1,12 +1,13 @@
 #[
-  ! ノードごとにそれぞれ値を持っている． その値が何の型なのか決めている.
+  ? ノードごとにそれぞれ値を持っている． その値が何の型なのか決めている.
 
-  ! 値
+  ? 値
   * kind, lhs, rhs
   * kind, lhs
   * val
   * lvar
 ]#
+
 import header
 
 #? int型生成
@@ -30,6 +31,7 @@ proc arrayType*(base: Type, size: int): Type =
   ty.arraySize = size
   return ty
 
+
 #? スタックで確保するバイト数
 proc sizeType*(ty: Type): int =                         # これよく書き間違える．．
   if ty.kind == TyInt or ty.kind == TyPtr:
@@ -37,8 +39,9 @@ proc sizeType*(ty: Type): int =                         # これよく書き間�
   assert(ty.kind == TyArray)                            # 現状，intとptr以外はarray
   return sizeType(ty.base) * ty.arraySize
 
+#? nodeの持つ全ての要素nodeに訪れる．（再帰ループ)
 proc visit(node: Node) =
-  if node == nil:
+  if node == nil:                                       # 再帰の返り値
     return
 
   visit(node.lhs)
@@ -64,19 +67,19 @@ proc visit(node: Node) =
     node.ty = intType()
     return
   of NdAdd:
-    if node.rhs.ty.base != nil:                                   #! 3 + ptrみたいな式はあり得る
+    if node.rhs.ty.base != nil:                                   #! 右辺がポインタ.....3 + ptrみたいな式はあり得るOK -> 入れ替えて確認
       var tmp = node.lhs
       node.lhs = node.rhs
       node.rhs = tmp
-    if node.rhs.ty.base != nil:                                   #! ptr + ptr という式はない
+    if node.rhs.ty.base != nil:                                   #! 右辺がポインタ.....ptr + ptr という式はない
       errorAt("invalid pointer arithmetic operands", node.tok)
     node.ty = node.lhs.ty                                         #! 右辺値がTyPtrだったらlhsとrhsを交換してるから自動的に，　右辺値がポインタなら右辺値の型，　右辺値が数値なら左辺値の型を入れる
                                                                   #! 加算はlhsとrhsが入れ替わっても問題ない(依存してない)
     return
   of NdSub:
-    if node.rhs.ty.base != nil:                                   #! 3 - ptr みたいな式は存在しない
+    if node.rhs.ty.base != nil:                                   #! 右辺値がポインタ．．．．．．．3 - ptr みたいな式は存在しない
       errorAt("invalid pointer arithmetic operands", node.tok)
-    node.ty = node.lhs.ty                                         #! 評価結果の型は，左辺の型に!!!!!依存する!!!!!
+    node.ty = node.lhs.ty                                         #! 評価結果の型は，左辺の型に依存
     return
   of NdAssign:
     node.ty = node.lhs.ty                                         #! 代入は「代入する値の型」に依存する！！！！
@@ -104,7 +107,7 @@ proc visit(node: Node) =
     discard
 
 #? annotate AST nodes with types
-proc addType*(prog: Program) =                                   #! ただの2重ループ(nodeの数だけvisit呼び出し)
+proc addType*(prog: Program) =                          # ただの2重ループ(関数 -> ノード)
   var fn = prog .fns
   while fn != nil:
     var node = fn.node

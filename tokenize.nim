@@ -6,7 +6,7 @@
 import header
 import strutils
 
-# 10以上の数値に対応
+# 10以上の数値に対応(要修正)
 proc checkNum(): string =
   var tmpIdx = idx + 1
   var tmpStr = $input[idx]
@@ -15,15 +15,6 @@ proc checkNum(): string =
     inc(idx)
     inc(tmpIdx)
   return tmpStr
-
-# 新しいトークンを作成してcurに繋げる
-proc newToken(kind: TokenKind, cur: Token, str: string): Token =
-  var tok = new Token
-  tok.kind = kind
-  tok.str = str
-  tok.at = idx
-  cur.next = tok
-  return tok
 
 # アルファベットチェック
 proc isAlpha(c: string): bool =
@@ -41,7 +32,7 @@ proc checkReserved(cur: var Token): (string, bool) =                  #! tuple�
     for tmp in strList1:
       var tmpStr: string = $input[idx]
       var tmpIdx: int = idx+1
-      for _ in 1..len(tmp)-1:                                         # 間違えた箇所覚書
+      for _ in 1..<len(tmp):                                         # 間違えた箇所覚書
         if len(input) > tmpIdx:
           tmpStr.add($input[tmpIdx])
           inc(tmpIdx)
@@ -64,6 +55,15 @@ proc checkReserved(cur: var Token): (string, bool) =                  #! tuple�
         return ($input[idx], true)
 
     return ("", false)
+
+# 新しいトークンを作成してcurに繋げる
+proc newToken(kind: TokenKind, cur: Token, str: string): Token =
+  var tok = new Token
+  tok.kind = kind
+  tok.str = str
+  tok.at = idx
+  cur.next = tok
+  return tok
 
 # 入力文字列inputをトークナイズして返す
 proc tokenize*(): Token =

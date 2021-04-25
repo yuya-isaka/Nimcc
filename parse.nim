@@ -258,7 +258,7 @@ proc declaration(): Node =
     return newNode(NdNull, tokPrev)
 
   expect("=")
-  var lhs: Node = newNode(lvar, tok)
+  var lhs: Node = newNode(lvar, tok)                                    # 変数生成
   var rhs: Node = expr()
   expect(";")
   var node: Node = newNode(NdAssign, lhs, rhs, tok)                     #! 代入処理，　int a = 3;
@@ -392,7 +392,7 @@ proc mul(): Node =
       return node
 
 #? unary = ("+" | "-" | "&" | "*" )? unary 
-#?         | primaryArray
+#?         | primaryArray                                                 配列の演算子は特別，　a[3] -> *(a+3) に書き換える．
 proc unary(): Node =
   if consume("+"):
     return unary()                                                        # これ忘れてた．．++とかもそりゃいいよね
@@ -409,6 +409,7 @@ proc unary(): Node =
   return primaryArray()
 
 #? primaryArray = primary ("[" expr "]")*
+#? 配列の演算子は特別，　a[3] -> *(a+3) に書き換える．
 proc primaryArray(): Node =
   var node = primary()
 
@@ -458,7 +459,7 @@ proc primary(): Node =
     if not tmpLvar[1]:
                                                                           # tmpLvar[0] = pushLvar(tok[0].str)  # 昔はここで変数をlocalsに追加してた．　今は上の方でintを見つけた瞬間に格納している．
       errorAt("undefined variable", tok[0])                               #! ここで見たことない変数が来るのはおかしいからエラー
-    return newNode(tmpLvar[0], tokPrev)                                   #! 見たことあるなら，それを格納
+    return newNode(tmpLvar[0], tokPrev)                                   #! 変数生成
 
   if token.kind != TkNum:
     errorAt("expected expression", token)

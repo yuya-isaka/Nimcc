@@ -32,7 +32,7 @@ proc genAddr(node: Node) =                                #! 左辺値生成（�
     errorAt("not an lvalue", node.tok)                    #! Token型を渡す設計にすることで， コードジェネレートの際のエラー位置を正確に確認できるようになった（本当か
 
 proc genLval(node: Node) =
-  if node.ty.kind == TyArray:                             #! 配列へのアクセスはデリファレンス経由じゃないとだめってこと？？
+  if node.ty.kind == TyArray:                             #! 配列へのアクセスはポインタ経由じゃないとだめ
     errorAt("not an lvalue", node.tok)
   genAddr(node)
 
@@ -63,12 +63,12 @@ proc gen(node: Node) =
     return
   of NdLvar:                                              #? 変数利用
     genAddr(node)                                         #! 変数を右辺値として扱う場合は， まず左辺値として評価
-    if node.ty.kind != TyArray:
+    if node.ty.kind != TyArray:                           #! 配列だったら，スタックトップにアドレスを残す．
       load()                                              #! スタックトップにある結果をアドレスとみなして，そのアドレスから値をロード
     return
   of NdAssign:                                            #? 代入
-    genLval(node.lhs)                                     #! 左辺値からアドレス生成(配列はエラー, デリファレンス経由じゃないとだめ？)
-    gen(node.rhs)                                         #! 右辺値としてコンパイルして結果を生成
+    genLval(node.lhs)                                     #! 左辺値, アドレス生成 (配列はエラー, ポインタ経由じゃないとだめ)
+    gen(node.rhs)                                         #! 右辺値コンパイル， 評価結果を生成
     store()                                               #! スタックトップに値があるから，それを左辺値のアドレスに代入
     return
   of NdAddr:                                              #? アドレス生成
@@ -76,7 +76,7 @@ proc gen(node: Node) =
     return
   of NdDeref:                                             #? デリファレンス
     gen(node.lhs)                                         #! 右辺値としてコンパイル. ->　何らかのアドレスを計算するコードに変換されるはず(そうでなければその結果をデリファレンスすることはできない．その場合はエラーにする） -> 最終的にgenAddrをどこかで呼び出すということ
-    if node.ty.kind != TyArray:
+    if node.ty.kind != TyArray:                           #! 配列だったら，スタックトップに評価結果を残す
       load()                                              #! 何らかのアドレスを計算した後， スタックに評価結果を残す， それをロード
     return
   of NdIf:
@@ -214,18 +214,18 @@ proc gen(node: Node) =
 
   echo "  push rax"                                       #! 式全体の結果を，スタックトップにプッシュ
 
-proc emitData(prog: Program) =                           # 完成形アセンブリ出力関数
-  echo ".data"
+proc emitData(prog: Program) =                            # 完成形アセンブリ出力関数
+  echo ".data"                                            # グローバル変数と文字列リテラルが置かれる場所
 
   var vl = prog.globals
   while vl != nil:
     var lvar = vl.lvar
-    echo fmt"{lvar.name}:"
+    echo fmt"{lvar.name}:"                                # スタティックリンクしないと動かない
     echo fmt"  .zero {sizeType(lvar.ty)}"
     vl = vl.next
 
 proc emitText(prog: Program) =
-  echo ".text"
+  echo ".text"                                            # プログラム（機械語，バイナリ）が置かれる場所です
 
   var fn = prog.fns
   while fn != nil:

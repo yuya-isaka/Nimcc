@@ -96,6 +96,11 @@ proc visit(node: Node) =
   of NdLvar:
     node.ty = node.lvar.ty                                        #! 変数ノードは，変数の型に依存する！！
     return                                                        #! ノードごとにそれぞれ値を持っている．その値が何の型なのか決めているのか
+  of NdSizeof:
+    node.kind = NdNum
+    node.ty = intType()
+    node.val = sizeType(node.lhs.ty)
+    node.lhs = nil
   else:
     discard
 

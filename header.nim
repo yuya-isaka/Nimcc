@@ -101,7 +101,8 @@ type
     NdFuncall,          # function
     NdAddr,             # pointer &
     NdDeref,            # pointer *
-    NdNull              # NULL
+    NdNull,             # NULL
+    NdSizeof            # sizeof 
 
 # ノード型
 type

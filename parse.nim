@@ -399,12 +399,15 @@ proc funcArgs(): Node =
   expect(")")
   return head                                                             #! 評価結果をNodeの連結リストで返す．
 
-#? primary =  "(" expr ")" | ident func-args? | num |
+#? primary =  "(" expr ")" | "sizeof" unary | ident func-args? | num |
 proc primary(): Node =
   if consume("("):
     var node = expr()                                                     # 再帰的に使う
     expect(")")
     return node
+
+  if consume("sizeof"):
+    return newNode(NdSizeof, unary(), tokPrev)
 
   var tok = consumeIdent()                                                # Token, bool が返る（tuple）
   if tok[1]:

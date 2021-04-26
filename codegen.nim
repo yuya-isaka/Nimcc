@@ -47,7 +47,7 @@ proc store() =
   echo "  pop rdi"
   echo "  pop rax"
   echo "  mov [rax], rdi"
-  echo "  push rdi"                                       #! NdAssignはNdExprStmtにラップされてるから，ここでpushしたものは，add rsp, 8で抜き取られる(ちゃんと取り除ける)
+  echo "  push rdi"                                       #! NdAssignはNdExprStmtにラップされてるから，ここでpushしたものは，add rsp, 8で抜き取られる(ちゃんと取り除ける) -> なぜここでpush rdi をしているか？　スタックに一つ値を残すというスタックマシンを再現するため
 
 proc gen(node: Node) =
 
@@ -76,7 +76,7 @@ proc gen(node: Node) =
     return
   of NdDeref:                                             #? デリファレンス
     gen(node.lhs)                                         #! 右辺値としてコンパイル. ->　何らかのアドレスを計算するコードに変換されるはず(そうでなければその結果をデリファレンスすることはできない．その場合はエラーにする） -> 最終的にgenAddrをどこかで呼び出すということ
-    if node.ty.kind != TyArray:                           #! 配列だったら，スタックトップに評価結果を残す ->　配列は暗黙的にポインタに型変換される． アドレスツンどけばいいっしょ
+    if node.ty.kind != TyArray:                           #! 配列だったら，スタックトップに評価結果を残す ->　配列は暗黙的にポインタに型変換される． -> 配列代入の時に，NdAssign->genLval()->genAddr(),NdDerefなので左辺gen()->NdAdd->gen()->NdLvar->genAddr(Ndlvar)(lea push)->gen()(push 1)->pop & pop->imul & add ->push rax->NdAssignのgen()-> push 3->NdAssgin(store())． その時この後addすることを見越して，load処理はせずに，アドレスだけをスタックに積んでおく必要がある．
       load()                                              #! 何らかのアドレスを計算した後， スタックに評価結果を残す， それをロード
     return
   of NdIf:

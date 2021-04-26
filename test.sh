@@ -35,6 +35,7 @@ assert2() {
 
 nim c nimcc.nim
 
+assert 3 'int main() { int x[1]; x[1] = 3; return x[1];}'
 assert 0 'int main() { return 0; }'
 assert 42 'int main() { return 42; }'
 assert 21 'int main() { return 5+20-4; }'

@@ -235,7 +235,7 @@ proc function(): Function =
     cur.next = stmt()
     cur = cur.next
 
-  fn.node = head.next                                                   #! Nodeの連結リストの先頭取得
+  fn.node = head.next                                                   #! Nodeの連結リストの先頭取得 -> codegenで抽象構文木を下りながら生成したいから
   fn.locals = locals                                                    #! 引数,ローカル変数の連結リストの先頭取得
   return fn
 
@@ -411,7 +411,7 @@ proc unary(): Node =
 #? primaryArray = primary ("[" expr "]")*
 #? 配列の演算子は特別，　a[3] -> *(a+3) に書き換える．
 proc primaryArray(): Node =
-  var node = primary()
+  var node = primary()                                                    # 配列だったらこのnodeの型がTyArrayになってる
 
   while consume("["):
     var exp = newNode(NdAdd, node, expr(), tokPrev)                       #! 左辺のnodeには識別子がくる． この左辺はNdLvarとして識別され，アドレス(RBP-offset)をゲットする．(これはロードしない) そのオフセットにexpr()で評価した数値を足すことで， 配列の要素にアクセスできる．

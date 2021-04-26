@@ -145,7 +145,7 @@ proc gen(node: Node) =
 
     var i = nargs - 1
     while i >= 0:
-      echo fmt"  pop {argreg[i]}"                         #! 順番にスタックからPOP(ABI仕様), ついでにRSPが関数の開始位置(RBP)まで戻る
+      echo fmt"  pop {argreg[i]}"                         #! 順番にスタックからPOP(ABI仕様) -> 引数それぞれ専用のレジスタに格納 ついでにRSPが関数の開始位置(RBP)まで戻る
       dec(i)                                              # これで空白のRBP以下が埋められた
 
     var label = labelSeq

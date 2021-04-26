@@ -74,11 +74,12 @@ type NodeKind* = enum
     NdSub,                      # -
     NdMul,                      # \*
     NdDiv,                      # /
-    NdNum,                      # 整数
     NdEq,                       # ==
     NdNe,                       # \!=
     NdL,                        # <
     NdLe,                       # <=
+
+    NdNum,                      # 整数
     NdAssign,                   # = 代入式
     NdLvar,                     # 変数
     NdReturn,                   # return

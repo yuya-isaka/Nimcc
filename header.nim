@@ -53,7 +53,7 @@ type TypeKind* = enum
 type Type* = ref object
     kind*: TypeKind       # 型の種類
     base*: Type           # TyPtrの時, 対象変数, ポインタか配列じゃなかったら，ここはnilのはず！！！
-    arraySize*: int       # typerで配列のサイズを計算するときに使う
+    arraySize*: int       # TyArrayで配列のサイズを計算するときに使う
 
 
 #? 識別子（変数， 配列)->違いはty要素で管理

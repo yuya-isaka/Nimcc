@@ -230,21 +230,22 @@ proc emitData(prog: Program) =                            # data領域
   while vl != nil:
     var lvar = vl.lvar
     echo fmt"{lvar.name}:"                                # スタティックリンクしないと動かない
-    if lvar.contents == "":
+    if lvar.stringLiteral == "":
       echo fmt"  .zero {sizeType(lvar.ty)}"                 # 多分0で初期化ってことだと思う． (現状はグローバル変数は宣言しかできない)
       vl = vl.next
       continue      
 
-    # if lvar.contents != "":                               # ruiさんはこうやってbyteで指定
-    #   for c in lvar.contents:
-    #     echo fmt"  .byte {c}"
+    if lvar.stringLiteral != "":                               # ruiさんはこうやってbyteで指定
+      for c in lvar.stringLiteral:
+        echo fmt"  .byte {int(c)}"                        #! intを入れないとだめ！！！ (charをASCII文字コードの数値に変換する)
           
-    if lvar.contents != "":
-      var tmpStr: string = "\""                             #? これ参考に実装 https://godbolt.org/#g:!((g:!((g:!((h:codeEditor,i:(j:1,lang:___c,source:'char+foo()+%7B+char+*x+%3D+%22abc%22%3B+return+x%5B0%5D%3B+%7D'),l:'5',n:'0',o:'C+source+%231',t:'0')),k:50,l:'4',n:'0',o:'',s:0,t:'0'),(g:!((h:compiler,i:(compiler:cg81,filters:(b:'0',binary:'1',commentOnly:'0',demangle:'0',directives:'0',execute:'1',intel:'1',trim:'0'),lang:___c,libs:!(),options:'-O0',source:1),l:'5',n:'0',o:'x86-64+gcc+8.1+(Editor+%231,+Compiler+%231)+C',t:'0')),k:50,l:'4',n:'0',o:'',s:0,t:'0')),l:'2',n:'0',o:'',t:'0')),version:4
-      for c in lvar.contents:                               # abc -> "abc" とかじゃないとだめ
-        tmpStr.add(c)
-      tmpStr.add("\"")
-      echo fmt"  .string {tmpStr}"
+    #? エスケープ文字をstringから認識できなかったから（stringからASCII文字に変換できなかった） から，seq[char]を使った実装に変更
+    # if lvar.stringLiteral != "":
+    #   var tmpStr: string = "\""                             #? これ参考に実装 https://godbolt.org/#g:!((g:!((g:!((h:codeEditor,i:(j:1,lang:___c,source:'char+foo()+%7B+char+*x+%3D+%22abc%22%3B+return+x%5B0%5D%3B+%7D'),l:'5',n:'0',o:'C+source+%231',t:'0')),k:50,l:'4',n:'0',o:'',s:0,t:'0'),(g:!((h:compiler,i:(compiler:cg81,filters:(b:'0',binary:'1',commentOnly:'0',demangle:'0',directives:'0',execute:'1',intel:'1',trim:'0'),lang:___c,libs:!(),options:'-O0',source:1),l:'5',n:'0',o:'x86-64+gcc+8.1+(Editor+%231,+Compiler+%231)+C',t:'0')),k:50,l:'4',n:'0',o:'',s:0,t:'0')),l:'2',n:'0',o:'',t:'0')),version:4
+    #   for c in lvar.stringLiteral:                               # abc -> "abc" とかじゃないとだめ
+    #     tmpStr.add(c)
+    #   tmpStr.add("\"")
+    #   echo fmt"  .string {tmpStr}"
 
     vl = vl.next
 

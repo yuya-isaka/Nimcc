@@ -456,31 +456,32 @@ proc primary(): Node =
   var tok = consumeIdent()                                                # Token, bool が返る（tuple）
   if tok[1]:
 
-    #関数
+    #? 関数
     if consume("("):                                                      #! 「見知らぬ名前と，(」が続いていたら，それは関数と判定し，引数を評価して返す
       var node = newNode(NdFuncall, tokPrev)
       node.funcname = tok[0].str
       node.args = funcArgs()
       return node
 
-    #変数
+    #? 変数
     var tmpLvar = findLvar(tok[0])                                        # LvarList, bool
     if not tmpLvar[1]:
                                                                           # tmpLvar[0] = pushLvar(tok[0].str)  # 昔はここで変数をlocalsに追加してた．　今は上の方でintを見つけた瞬間に格納している．
       errorAt("undefined variable", tok[0])                               #! ここで見たことない変数が来るのはおかしいからエラー
     return newNode(tmpLvar[0], tokPrev)                                   #! 変数生成
-
+    
+  #? 文字列リテラル
   var tmpTok = token
   if token.kind == TkStr:
     token = token.next
 
-    var ty = arrayType(charType(), tmpTok.str.len+1)                        #! 文字列リテラルはChar型の配列,  null終端分の文字列を+1で追加
+    var ty = arrayType(charType(), tmpTok.stringLiteral.len)                        #! 文字列リテラルはChar型の配列,  null終端分の文字列を+1で追加
     var lvar = pushLvar(fmt".L.data.{cnt}", ty, false)
     inc(cnt)
-    lvar.contents = tmpTok.str
+    lvar.stringLiteral = tmpTok.stringLiteral
     return newNode(lvar, tmpTok)
 
-
+  #? 数値
   if token.kind != TkNum:
     errorAt("expected expression", token)
   return newNode(expectNumber(), tokPrev)

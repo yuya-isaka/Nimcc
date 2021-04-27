@@ -56,6 +56,19 @@ proc checkReserved(cur: var Token): (string, bool) =                  #! tuple�
 
     return ("", false)
 
+proc getEscapeChar(c: char): char =
+  case c
+  of 'a': return '\a'
+  of 'b': return '\b'
+  of 't': return '\t'
+  of 'n': return '\n'
+  of 'v': return '\v'
+  of 'f': return '\f'
+  of 'r': return '\r'
+  of 'e': return char(27)
+  of '0': return char(0)
+  else: return c
+
 # 新しいトークンを作成してcurに繋げる
 proc newToken(kind: TokenKind, cur: Token, str: string): Token =
   var tok = new Token
@@ -63,6 +76,15 @@ proc newToken(kind: TokenKind, cur: Token, str: string): Token =
   tok.str = str
   tok.at = idx
   cur.next = tok
+  return tok
+
+proc newToken(kind: TokenKind, cur: Token, stringLiteral: seq[char]): Token =
+  var tok = new Token
+  tok.kind = kind
+  tok.str = ""
+  tok.at = idx
+  cur.next = tok
+  tok.stringLiteral = stringLiteral
   return tok
 
 # 入力文字列inputをトークナイズして返す
@@ -86,19 +108,38 @@ proc tokenize*(): Token =
       idx += len(tmpStr[0])                         # 読んだ文字列文インデックスを進める
       continue
 
-    #? 文字列リテラル
+    #? 文字列リテラル seq[char]時代
     if input[idx] == '\"':
       inc(idx)
-      var tmpStr: string
+      var tmpStr: seq[char]
       while input[idx] != '\"':
-        tmpStr.add($input[idx])
-        inc(idx)
         if len(input) <= idx:
           errorAt("unclosed string literal", token)
-      # tmpStr.add("\0")                                #? null terminate
+
+        if input[idx] == '\\':
+          inc(idx)
+          tmpStr.add(getEscapeChar(input[idx]))
+        else:
+          tmpStr.add(input[idx])
+        inc(idx)
+      tmpStr.add("\0")                                #? null terminate
       cur = newToken(TkStr, cur, tmpStr)
       inc(idx)
       continue
+
+    # #? 文字列リテラル string時代
+    # if input[idx] == '\"':
+    #   inc(idx)
+    #   var tmpStr: string
+    #   while input[idx] != '\"':
+    #     tmpStr.add($input[idx])
+    #     inc(idx)
+    #     if len(input) <= idx:
+    #       errorAt("unclosed string literal", token)
+    #   # tmpStr.add("\0")                                #? null terminate
+    #   cur = newToken(TkStr, cur, tmpStr)
+    #   inc(idx)
+    #   continue
 
     #? 識別子
     if isAlpha($input[idx]):

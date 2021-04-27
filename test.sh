@@ -37,6 +37,7 @@ nim c nimcc.nim
 
 # これがいけてまう．．．
 # assert2 0 'int main() { return "abc"[5]; }' 
+# assert2 99 'int main() { return "abc"[2]; }' 
 # assert2 4 'int x; int main() { x = 4; return x;}'
 # assert 3 'int main() { int x[1]; x[1] = 3; return x[1];}'
 assert 0 'int main() { return 0; }'
@@ -173,5 +174,19 @@ assert2 98 'int main() { return "abc"[1]; }'
 assert2 99 'int main() { return "abc"[2]; }'
 assert2 0 'int main() { return "abc"[3]; }'
 assert2 4 'int main() { return sizeof("abc"); }'  
+
+assert2 7 'int main() { return "\a"[0]; }'
+assert2 8 'int main() { return "\b"[0]; }'
+assert2 9 'int main() { return "\t"[0]; }'
+assert2 10 'int main() { return "\n"[0]; }'
+assert2 11 'int main() { return "\v"[0]; }'
+assert2 12 'int main() { return "\f"[0]; }'
+assert2 13 'int main() { return "\r"[0]; }'
+assert2 27 'int main() { return "\e"[0]; }'
+assert2 0 'int main() { return "\0"[0]; }'
+
+assert2 106 'int main() { return "\j"[0]; }'
+assert2 107 'int main() { return "\k"[0]; }'
+assert2 108 'int main() { return "\l"[0]; }'
 
 echo OK

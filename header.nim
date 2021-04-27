@@ -29,6 +29,7 @@ type Token* = ref object
     val*: int             # kindがTkNumの場合，その数値
     str*: string          # トークン文字列
     at*: int              # 入力文字配列のうち，どこを指しているか（先頭インデックス）
+    stringLiteral*: seq[char]
 
 var token*: Token = nil
 
@@ -64,7 +65,8 @@ type Lvar* = ref object
     offset*: int                # offset from RBP
     ty*: Type
     isLocal*: bool              #! ローカル変数かグローバル変数か
-    contents*: string            #! 文字列リテラル
+    stringLiteral*: seq[char]            #! 文字列リテラル seq[char]時代
+    # stringLiteral*: string            #! 文字列リテラル string時代
 
 type LvarList* = ref object
     next*: LvarList

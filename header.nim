@@ -20,7 +20,8 @@ type TokenKind* = enum
     TkReserved,           # 記号
     TkIdent,              # 識別子（変数）
     TkNum,                # 整数トークン
-    TkEof                 # 入力の終わりを表すトークン
+    TkEof,                # 入力の終わりを表すトークン
+    TkStr
 
 type Token* = ref object
     kind*: TokenKind      # トークンの種類
@@ -49,7 +50,7 @@ type TypeKind* = enum
     TyInt,
     TyPtr,
     TyArray,
-    TyChar
+    TyChar,
 
 type Type* = ref object
     kind*: TypeKind       # 型の種類
@@ -63,6 +64,7 @@ type Lvar* = ref object
     offset*: int                # offset from RBP
     ty*: Type
     isLocal*: bool              #! ローカル変数かグローバル変数か
+    contents*: string            #! 文字列リテラル
 
 type LvarList* = ref object
     next*: LvarList

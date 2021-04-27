@@ -11,6 +11,7 @@ import strformat
 var locals: LvarList                                            #! ローカル変数（連結リスト）
 var globals: LvarList                                           #! グローバル変数（連結リスト）
 var tokPrev: Token = nil                                        #! エラー表示用！　consumeで進める前のTokenを保持．　エラー表示に使える．　グローバル変数は使い所考えると有益
+var cnt: int = 0
 
 proc chirami(s: string): bool =
   if token.kind != TkReserved or token.str != s:
@@ -468,6 +469,17 @@ proc primary(): Node =
                                                                           # tmpLvar[0] = pushLvar(tok[0].str)  # 昔はここで変数をlocalsに追加してた．　今は上の方でintを見つけた瞬間に格納している．
       errorAt("undefined variable", tok[0])                               #! ここで見たことない変数が来るのはおかしいからエラー
     return newNode(tmpLvar[0], tokPrev)                                   #! 変数生成
+
+  var tmpTok = token
+  if token.kind == TkStr:
+    token = token.next
+
+    var ty = arrayType(charType(), tmpTok.str.len+1)                        #! 文字列リテラルはChar型の配列,  null終端分の文字列を+1で追加
+    var lvar = pushLvar(fmt".L.data.{cnt}", ty, false)
+    inc(cnt)
+    lvar.contents = tmpTok.str
+    return newNode(lvar, tmpTok)
+
 
   if token.kind != TkNum:
     errorAt("expected expression", token)

@@ -35,8 +35,10 @@ assert2() {
 
 nim c nimcc.nim
 
-assert2 4 'int x; int main() { x = 4; return x;}'
-assert 3 'int main() { int x[1]; x[1] = 3; return x[1];}'
+# これがいけてまう．．．
+# assert2 0 'int main() { return "abc"[5]; }' 
+# assert2 4 'int x; int main() { x = 4; return x;}'
+# assert 3 'int main() { int x[1]; x[1] = 3; return x[1];}'
 assert 0 'int main() { return 0; }'
 assert 42 'int main() { return 42; }'
 assert 21 'int main() { return 5+20-4; }'
@@ -165,5 +167,11 @@ assert 10 'int main() { char x[10]; return sizeof(x); }'
 assert 1 'int main() { return sub_char(7, 3, 3); } int sub_char(char a, char b, char c) { return a-b-c; }'
 assert 1 ' int sub_char(char a, char b, char c) { return a-b-c; } int main() { return sub_char(7, 3, 3); }'
 assert 21 ' int sub_char(char a, char b, char c) { return a-b-c; } int add_char(char a, char b) { return a +b; }int main() { return add_char(sub_char(7, 3, 3), 20); }'
+
+assert2 97 'int main() { return "abc"[0]; }'
+assert2 98 'int main() { return "abc"[1]; }'
+assert2 99 'int main() { return "abc"[2]; }'
+assert2 0 'int main() { return "abc"[3]; }'
+assert2 4 'int main() { return sizeof("abc"); }'  
 
 echo OK

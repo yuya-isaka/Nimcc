@@ -86,6 +86,20 @@ proc tokenize*(): Token =
       idx += len(tmpStr[0])                         # 読んだ文字列文インデックスを進める
       continue
 
+    #? 文字列リテラル
+    if input[idx] == '\"':
+      inc(idx)
+      var tmpStr: string
+      while input[idx] != '\"':
+        tmpStr.add($input[idx])
+        inc(idx)
+        if len(input) <= idx:
+          errorAt("unclosed string literal", token)
+      # tmpStr.add("\0")                                #? null terminate
+      cur = newToken(TkStr, cur, tmpStr)
+      inc(idx)
+      continue
+
     #? 識別子
     if isAlpha($input[idx]):
       var tmpStr: string = $input[idx]
@@ -104,7 +118,7 @@ proc tokenize*(): Token =
       inc(idx)
       continue
 
-    errorAt("トークナイズできません．", token)
+    errorAt("トークナイズできません．", token)                                    # nil のtokenが渡されて， errorAtでnil用の処理が走る
 
   discard newToken(TkEof, cur, "\n")
   return head.next

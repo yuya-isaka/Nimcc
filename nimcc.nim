@@ -11,6 +11,10 @@ import parse
 import codegen
 import tokenize
 
+# 無理矢理オフセット（スタックサイズ）を8の倍数にする.  (今までは全部8バイトだったが，Char型が1バイトになったため，全体のstacksizeが8の倍数じゃない可能性がある)
+proc alignTo(n: int, align: int): int =
+  return (n + align - 1) and not (align - 1)
+
 proc main() =
 
   #? トークナイズ
@@ -31,7 +35,7 @@ proc main() =
       offset += sizeType(vl.lvar.ty)    # 対象識別子(変数)の型で，確保するサイズを決める(intとptrは「8」, arrayは「type*size」)
       vl.lvar.offset = offset
       vl = vl.next
-    fn.stackSize = offset
+    fn.stackSize = alignTo(offset, 8)
     fn = fn.next
 
   #? アセンブリ生成

@@ -48,7 +48,8 @@ proc errorAt*(errorMsg: string, tok: Token) =
 type TypeKind* = enum
     TyInt,
     TyPtr,
-    TyArray
+    TyArray,
+    TyChar
 
 type Type* = ref object
     kind*: TypeKind       # 型の種類

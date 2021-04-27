@@ -10,23 +10,28 @@
 
 import header
 
+proc newType(kind: TypeKind): Type =
+  var ty = new Type
+  ty.kind = kind
+  return ty
+
 #? int型生成
 proc intType*(): Type =
-  var ty = new Type
-  ty.kind = TyInt
-  return ty
+  return newType(TyInt)
+
+#? char型生成
+proc charType*(): Type =
+  return newType(TyChar)
 
 #? Ptr型生成(baseとなる型を受け取る)
 proc pointerType*(base: Type): Type =
-  var ty = new Type
-  ty.kind = TyPtr
+  var ty = newType(TyPtr)
   ty.base = base
   return ty
 
 #? Array型生成(baseとなる型とサイズを受け取る)
 proc arrayType*(base: Type, size: int): Type =
-  var ty = new Type
-  ty.kind = TyArray
+  var ty = newType(TyArray)
   ty.base = base
   ty.arraySize = size
   return ty
@@ -34,10 +39,14 @@ proc arrayType*(base: Type, size: int): Type =
 
 #? スタックで確保するバイト数
 proc sizeType*(ty: Type): int =                         # これよく書き間違える．．
-  if ty.kind == TyInt or ty.kind == TyPtr:
-    return 8    
-  assert(ty.kind == TyArray)                            # 現状，intとptr以外はarray
-  return sizeType(ty.base) * ty.arraySize
+  case ty.kind:
+  of TyInt, TyPtr:
+    return 8
+  of TyChar:
+    return 1
+  else:
+    assert(ty.kind == TyArray)                            # 現状，intとptr以外はarray
+    return sizeType(ty.base) * ty.arraySize
 
 #? nodeの持つ全ての要素nodeに訪れる．（再帰ループ)
 proc visit(node: Node) =

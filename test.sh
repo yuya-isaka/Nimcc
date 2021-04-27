@@ -35,8 +35,8 @@ assert2() {
 
 nim c nimcc.nim
 
-# assert2 4 'int x; int main() { x = 4; return x;}'
-# assert 3 'int main() { int x[1]; x[1] = 3; return x[1];}'
+assert2 4 'int x; int main() { x = 4; return x;}'
+assert 3 'int main() { int x[1]; x[1] = 3; return x[1];}'
 assert 0 'int main() { return 0; }'
 assert 42 'int main() { return 42; }'
 assert 21 'int main() { return 5+20-4; }'
@@ -156,5 +156,14 @@ assert2 3 'int x[4]; int main() { x[0]=0; x[1]=1; x[2]=2; x[3]=3; return x[3]; }
 
 assert2 8 'int x; int main() { return sizeof(x); }'
 assert2 32 'int x[4]; int main() { return sizeof(x); }'
+
+assert 1 'int main() { char x=1; return x; }'
+assert 1 'int main() { char x=1; char y=2; return x; }'
+assert 2 'int main() { char x=1; char y=2; return y; }'
+assert 1 'int main() { char x; return sizeof(x); }'
+assert 10 'int main() { char x[10]; return sizeof(x); }'
+assert 1 'int main() { return sub_char(7, 3, 3); } int sub_char(char a, char b, char c) { return a-b-c; }'
+assert 1 ' int sub_char(char a, char b, char c) { return a-b-c; } int main() { return sub_char(7, 3, 3); }'
+assert 21 ' int sub_char(char a, char b, char c) { return a-b-c; } int add_char(char a, char b) { return a +b; }int main() { return add_char(sub_char(7, 3, 3), 20); }'
 
 echo OK

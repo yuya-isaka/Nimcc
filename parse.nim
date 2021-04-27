@@ -17,6 +17,9 @@ proc chirami(s: string): bool =
     return false
   return true
 
+proc isTypeName(): bool =
+  return chirami("int") or chirami("char")
+
 proc consume(s: string): bool =
   if not chirami(s):
     return false
@@ -172,10 +175,15 @@ proc program*(): Program =
   prog.fns = head.next
   return prog
 
-#? basetype = "int" "*"*
-proc basetype(): Type =                                                 #! 現状baseの型はintのみ
-  expect("int")
-  var ty: Type = intType()
+#? basetype = ("char" | int") "*"*
+proc basetype(): Type =                                                 
+  var ty = new Type
+  if consume("char"):
+    ty = charType()
+  else:
+    expect("int")
+    ty = intType()                                                      #! 現状char以外はint
+
   while consume("*"):
     ty = pointerType(ty)
   return ty
@@ -320,7 +328,7 @@ proc stmt(): Node =
       node.body.add(stmt())                                             #! 配列にしてみた．
     return node
 
-  if chirami("int"):                                                    #! intかどうかチラ見して確認
+  if isTypeName():                                                      #! 型名かチラ見！！！ （intかchar)
     return declaration()                                                #! intなら変数として格納!!!!
 
   var node = readExprStmt()                                             #! 式の文(a=3; とかとか)

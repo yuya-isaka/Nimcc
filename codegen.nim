@@ -9,7 +9,8 @@ import strformat
 
 var labelSeq: int                                         #! 0で初期化してくれる
 var funcname: string
-var argreg = ["rdi", "rsi", "rdx", "rcx", "r8", "r9"]     #! 関数の引数の順番． x86-64, ABI仕様で決められている．　このルールに従わないと適切な機械語を生成できない
+var argreg1 = ["dil", "sil", "dl", "cl", "r8b", "r9b"]
+var argreg8 = ["rdi", "rsi", "rdx", "rcx", "r8", "r9"]     #! 関数の引数の順番． x86-64, ABI仕様で決められている．　このルールに従わないと適切な機械語を生成できない
 
 proc gen(node: Node)
 
@@ -37,16 +38,24 @@ proc genLval(node: Node) =
   genAddr(node)
 
 #? 変数取り出し
-proc load() =                                            
+proc load(ty: Type) =                                            
   echo "  pop rax"
-  echo "  mov rax, [rax]"
+
+  if sizeType(ty) == 1:                                   #! char型の処理
+    echo "  movsx rax, byte ptr [rax]"                    #! RAXが指しているアドレスから1バイトを読み込んでECXに入れる -> movでALにロードすると上位ビットが0に初期化されない -> 初期化されないと依存関係が64ビットの中に残ってしまい，並列化による恩恵を受けられなくなる
+  else:
+    echo "  mov rax, [rax]"
   echo "  push rax"
 
 #? 変数格納
-proc store() =                                            
+proc store(ty: Type) =                                            
   echo "  pop rdi"
   echo "  pop rax"
-  echo "  mov [rax], rdi"
+
+  if sizeType(ty) == 1:
+    echo "  mov [rax], dil"
+  else:
+    echo "  mov [rax], rdi"
   echo "  push rdi"                                       #! NdAssignはNdExprStmtにラップされてるから，ここでpushしたものは，add rsp, 8で抜き取られる(ちゃんと取り除ける) -> なぜここでpush rdi をしているか？　スタックに一つ値を残すというスタックマシンを再現するため
 
 proc gen(node: Node) =
@@ -64,12 +73,12 @@ proc gen(node: Node) =
   of NdLvar:                                              #? 変数利用
     genAddr(node)                                         #! 変数を右辺値として扱う場合は， まず左辺値として評価
     if node.ty.kind != TyArray:                           #! 配列だったら，スタックトップにアドレスを残す．
-      load()                                              #! スタックトップにある結果をアドレスとみなして，そのアドレスから値をロード
+      load(node.ty)                                              #! スタックトップにある結果をアドレスとみなして，そのアドレスから値をロード
     return
   of NdAssign:                                            #? 代入
     genLval(node.lhs)                                     #! 左辺値, アドレス生成 (配列はエラー, ポインタ経由じゃないとだめ)
     gen(node.rhs)                                         #! 右辺値コンパイル， 評価結果を生成
-    store()                                               #! スタックトップに値があるから，それを左辺値のアドレスに代入
+    store(node.ty)                                               #! スタックトップに値があるから，それを左辺値のアドレスに代入
     return
   of NdAddr:                                              #? アドレス生成
     genAddr(node.lhs)                                     #! 左辺値としてコンパイル！！！！！！！ -> アドレスを計算してスタックに格納
@@ -77,7 +86,7 @@ proc gen(node: Node) =
   of NdDeref:                                             #? デリファレンス
     gen(node.lhs)                                         #! 右辺値としてコンパイル. ->　何らかのアドレスを計算するコードに変換されるはず(そうでなければその結果をデリファレンスすることはできない．その場合はエラーにする） -> 最終的にgenAddrをどこかで呼び出すということ
     if node.ty.kind != TyArray:                           #! 配列だったら，スタックトップに評価結果を残す ->　配列は暗黙的にポインタに型変換される． -> 配列代入の時に，NdAssign->genLval()->genAddr(),NdDerefなので左辺gen()->NdAdd->gen()->NdLvar->genAddr(Ndlvar)(lea push)->gen()(push 1)->pop & pop->imul & add ->push rax->NdAssignのgen()-> push 3->NdAssgin(store())． その時この後addすることを見越して，load処理はせずに，アドレスだけをスタックに積んでおく必要がある．
-      load()                                              #! 何らかのアドレスを計算した後， スタックに評価結果を残す， それをロード
+      load(node.ty)                                              #! 何らかのアドレスを計算した後， スタックに評価結果を残す， それをロード
     return
   of NdIf:
     var label = labelSeq                                  #! ラベル番号はユニークにする
@@ -145,7 +154,7 @@ proc gen(node: Node) =
 
     var i = nargs - 1
     while i >= 0:
-      echo fmt"  pop {argreg[i]}"                         #! 順番にスタックからPOP(ABI仕様) -> 引数それぞれ専用のレジスタに格納 ついでにRSPが関数の開始位置(RBP)まで戻る
+      echo fmt"  pop {argreg8[i]}"                         #! 順番にスタックからPOP(ABI仕様) -> 引数それぞれ専用のレジスタに格納 ついでにRSPが関数の開始位置(RBP)まで戻る
       dec(i)                                              # これで空白のRBP以下が埋められた
 
     var label = labelSeq
@@ -154,12 +163,12 @@ proc gen(node: Node) =
     echo "  and rax, 15"                                  #! 関数を呼ぶ前にRSPを16の倍数になるように調整(PUSHやPOPはRSPを8バイト単位で変更するから、call命令を発行するときに必ずしもRSPが16の倍数になっているとは限らん)
                                                           #! and 15, 15 -> 15   and 16, 15 -> 0   and 17, 15 -> 1
     echo fmt"  jnz .Lcall{label}"                         #! 比較結果!=0で飛ぶ(RAXが16の倍数じゃない場合飛ぶ)
-    echo "  mov rax, 0" 
+    echo "  mov rax, 0"                                   #! RAX初期化 -> 関数の呼び出し前はalが0になってないといけない
     echo fmt"  call {node.funcname}"
     echo fmt"  jmp .Lend{label}"
     echo fmt".Lcall{label}:"                              #! jnz .Lcallで飛んでくる
     echo "  sub rsp, 8"                                   #! スタックを伸ばす(RSPが16の倍数になるように調整)
-    echo "  mov rax, 0"                                   #! RAX初期化 
+    echo "  mov rax, 0"                                   #! RAX初期化 -> 関数の呼び出し前はalが0になってないといけない
     echo fmt"  call {node.funcname}"
     echo "  add rsp, 8"                                   #! スタックを縮ませ元に戻す
     echo fmt".Lend{label}:"
@@ -214,17 +223,25 @@ proc gen(node: Node) =
 
   echo "  push rax"                                       #! 式全体の結果を，スタックトップにプッシュ
 
-proc emitData(prog: Program) =                            # 完成形アセンブリ出力関数
+proc emitData(prog: Program) =                            # data領域
   echo ".data"                                            # グローバル変数と文字列リテラルが置かれる場所
 
   var vl = prog.globals
   while vl != nil:
     var lvar = vl.lvar
     echo fmt"{lvar.name}:"                                # スタティックリンクしないと動かない
-    echo fmt"  .zero {sizeType(lvar.ty)}"                 # 多分0で初期化ってことだと思う．
+    echo fmt"  .zero {sizeType(lvar.ty)}"                 # 多分0で初期化ってことだと思う． (現状はグローバル変数は宣言しかできない)
     vl = vl.next
 
-proc emitText(prog: Program) =
+proc loadArg(lvar: Lvar, idx: int) =                       #! スタックに確保した引数領域に， レジスタの値を代入する．　（レジスタの値は，main関数内で他の関数(addやらsubやら）を呼んだ際に，既にレジスタの中に書き出してある．)
+  var sz = sizeType(lvar.ty)
+  if sz == 1:
+    echo fmt"  mov [rbp-{lvar.offset}], {argreg1[idx]}"
+  else:
+    assert(sz == 8)
+    echo fmt"   mov [rbp-{lvar.offset}], {argreg8[idx]}"
+
+proc emitText(prog: Program) =                            # text領域
   echo ".text"                                            # プログラム（機械語，バイナリ）が置かれる場所です
 
   var fn = prog.fns
@@ -236,15 +253,12 @@ proc emitText(prog: Program) =
     #? プロローグ
     echo "  push rbp"
     echo "  mov rbp, rsp"
-    echo fmt"  sub rsp, {fn.stackSize}"
+    echo fmt"  sub rsp, {fn.stackSize}"                    #! 引数とローカル変数のスタック領域をRBPの下に確保
 
-    var i = 0
-                                                          #! vlの中身は,0-6の連結
-    var vl = fn.params                                    #! ここでオフセットを指定するためにparamsは使われる．ここには引数だけ入ってる
+    var i = 0                                             #? ここは最初のmain()関数では呼ばれない（今のところ,main関数の引数の処理方法についてはまだ実装していない） -> gen()でのNdFuncallが先に呼ばれて，レジスタに値がセットされる．
+    var vl = fn.params                                    #! ここで関数の引数に，レジスタに入っている値を代入するためにfn.paramsは使われる
     while vl != nil:
-      var lvar = vl.lvar
-                                                          #!  レジスタの値をそのローカル変数のためのスタック上の領域に書き出し(ローカル変数と同じように扱える)
-      echo fmt"  mov [rbp-{lvar.offset}], {argreg[i]}"    #! 最初に6つのローカル変数のぶんのスタック領域を確保しておく（空白で良い）
+      loadArg(vl.lvar, i)                                 #! 引数のためのスタック領域は確保されているが， 引数の中身がない． プログラムで渡した引数はx86-64では特定のレジスタの中に入っている．　そのレジスタの値をスタック上で確保していた引数の場所に代入することで，引数の値を参照できる． -> この後はローカル変数と同じようにアクセスすると値を得られる
       inc(i)
       vl = vl.next
 
@@ -256,7 +270,7 @@ proc emitText(prog: Program) =
     #? エピローグ
     echo fmt".Lreturn.{funcname}:"
     echo "  mov rsp, rbp"                                 #! RSP(スタックトップ)をRBPの位置に移動
-    echo "  pop rbp"                                      #! POPするとRSP兼RBPの値(上にあるRBPのアドレス)をスタックから取り出して， RBPにストア -> RBPが元に戻る(上のRBPに戻る) -> RSPがリターンアドレスを指す
+    echo "  pop rbp"                                      #! POPするとRSP兼RBPの値(上にRBPのアドレス)をスタックから取り出して， RBPにストア -> RBPが元に戻る(上のRBPに戻る) -> RSPがリターンアドレスを指す
     echo "  ret"                                          #! スタックからアドレスを一つポップ(リターンアドレスのはず），　そのアドレスにジャンプ
 
     fn = fn.next

@@ -21,6 +21,8 @@ proc chirami(s: string): bool =
 proc isTypeName(): bool =
   return chirami("int") or chirami("char")
 
+#---------------------------------------------------------------
+
 proc consume(s: string): bool =
   if not chirami(s):
     return false
@@ -63,6 +65,8 @@ proc expectIdent(): string =
   token = token.next
   return val
 
+#---------------------------------------------------------------
+
 #? 既に登録されている変数がチェック
 proc findLvar(tok: Token): (Lvar, bool) =                       #! tupleを返す(この設計は直さないといけん)
   #? ローカル変数チェク
@@ -98,6 +102,8 @@ proc pushLvar(name: string, ty: Type, isLocal: bool): Lvar =
     globals = vl
   return lvar
 
+#---------------------------------------------------------------
+
 #? 多重ディスパッチ, オーバーロード
 #? kind(全ての元となる), こいつ単体では何の値も持っていない
 proc newNode(kind: NodeKind, tok: Token): Node =
@@ -131,6 +137,8 @@ proc newNode(lvar: Lvar, tok: Token): Node =
   var node = newNode(NdLvar, tok)
   node.lvar = lvar
   return node
+
+#---------------------------------------------------------------
 
 #! 優先度低い順
 proc program*(): Program
@@ -188,6 +196,8 @@ proc basetype(): Type =
   while consume("*"):
     ty = pointerType(ty)
   return ty
+
+#---------------------------------------------------------------
 
 proc readTypeSuffix(base: var Type): Type =
   if not consume("["):
@@ -248,6 +258,8 @@ proc function(): Function =
   fn.locals = locals                                                    #! 引数,ローカル変数の連結リストの先頭取得
   return fn
 
+#---------------------------------------------------------------
+
 proc globalLvar() =
   var ty = basetype()
   var name = expectIdent()
@@ -272,6 +284,8 @@ proc declaration(): Node =
   expect(";")
   var node: Node = newNode(NdAssign, lhs, rhs, tok)                     #! 代入処理，　int a = 3;
   return newNode(NdExprStmt, node, tok)                                 #! 代入では評価結果をスタックに残す必要はない, 式の文
+
+#---------------------------------------------------------------
 
 proc readExprStmt(): Node =
   var tok = token                                                       # この関数を呼び出すときはconsumeでtokenの連結が進められないから．現在参照している部分を見ればいい
@@ -416,6 +430,8 @@ proc unary(): Node =
     return newNode(NdDeref, unary(), tokPrev)
 
   return primaryArray()
+
+#---------------------------------------------------------------
 
 #? primaryArray = primary ("[" expr "]")*
 #? 配列の演算子は特別，　a[3] -> *(a+3) に書き換える．

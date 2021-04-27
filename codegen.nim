@@ -23,7 +23,7 @@ proc genAddr(node: Node) =                                #! 左辺値生成（�
       echo fmt"  lea rax, [rbp-{lvar.offset}]"             #! アドレス計算を行うが，メモリアクセスは行わず，アドレス計算の結果そのもの(アドレス）をraxに代入
       echo "  push rax"                                   #! raxにはアドレスが入ってる!!!重要だよ！！（評価結果じゃないんだよ！）
     else:
-      echo fmt"  push offset {lvar.name}"
+      echo fmt"  push offset {lvar.name}"                 #! グローバル変数の名前(lvar.name)をセット！ -> .data領域のアドレスを参照する？
     return
   of NdDeref:
     gen(node.lhs)                                         #! *p = 3 のようにデリファレンス経由で値を代入するときに対応するため， pのアドレスが生成されるように左辺値をコンパイル
@@ -221,7 +221,7 @@ proc emitData(prog: Program) =                            # 完成形アセン�
   while vl != nil:
     var lvar = vl.lvar
     echo fmt"{lvar.name}:"                                # スタティックリンクしないと動かない
-    echo fmt"  .zero {sizeType(lvar.ty)}"
+    echo fmt"  .zero {sizeType(lvar.ty)}"                 # 多分0で初期化ってことだと思う．
     vl = vl.next
 
 proc emitText(prog: Program) =

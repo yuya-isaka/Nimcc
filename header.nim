@@ -97,7 +97,8 @@ type NodeKind* = enum
     NdAddr,                     # pointer &
     NdDeref,                    # pointer *
     NdNull,                     # NULL
-    NdSizeof                    # sizeof 
+    NdSizeof,                    # sizeof 
+    NdStmtExpr
 
 type Node* = ref object
     kind*: NodeKind             # ノードの種類

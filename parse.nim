@@ -337,7 +337,7 @@ proc stmt(): Node =
     node.then = stmt()                                                  #! このforでは，　ここのstatement（文)を返す．
     return node
 
-  if consume("{"):
+  if consume("{"):                                                      #! NdStmtExprと違って，値を返さない（文）
     var node = newNode(NdBlock, tokPrev)
     while not consume("}"):                                             #! ruiさんのとは違う実装だよー気をつけてなー未来の自分〜
       node.body.add(stmt())                                             #! 配列にしてみた．
@@ -445,6 +445,20 @@ proc primaryArray(): Node =
   
   return node
 
+proc stmtExpr(): Node =
+  var node = newNode(NdStmtExpr, tokPrev)                               #! NdBlockと違って最後の値を返す！！！！！(途中にreturnがあればそれを返す) -> 式だから
+  var cur = new Node
+  while not consume("}"):                                             #! ruiさんのとは違う実装だよー気をつけてなー未来の自分〜
+    cur = stmt()
+    node.body.add(cur)                                                    #! 配列にしてみた．
+  expect(")")
+
+  if cur.kind != NdExprStmt:                                                
+    errorAt("stmt expr returning void is not supported", cur.tok)
+  # cur = cur.lhs
+  node.body[high(node.body)] = cur.lhs                                    #! 最後は左辺を入力することで, NdExprStmtから抜ける（add rsp, 8)をしないようにする
+  return node
+
 #? funcArgs =  "(" (assign ("," assign)*)? ")"
 #? 関数の引数を評価し返す -> node.argsで持つ
 proc funcArgs(): Node =
@@ -462,6 +476,8 @@ proc funcArgs(): Node =
 #? primary =  "(" expr ")" | "sizeof" unary | ident func-args? | num |
 proc primary(): Node =
   if consume("("):
+    if consume("{"):
+      return stmtExpr()
     var node = expr()                                                     # 再帰的に使う
     expect(")")
     return node

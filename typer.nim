@@ -112,6 +112,11 @@ proc visit(node: Node) =
     node.ty = intType()
     node.val = sizeType(node.lhs.ty)
     node.lhs = nil
+    return
+  of NdStmtExpr:
+    var last = node.body[high(node.body)]                          #! body配列の最後の要素の型を設定(途中でretunするときどうなる？)
+    node.ty = last.ty
+    return
   else:
     discard
 

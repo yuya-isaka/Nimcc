@@ -138,7 +138,7 @@ proc gen(node: Node) =
     echo fmt"   jmp .Lbegin{label}"
     echo fmt".Lend{label}:"
     return
-  of NdBlock:                                             # {}の中身はひたすら生成, body: seq[Node]
+  of NdBlock, NdStmtExpr:                                             # {}の中身はひたすら生成, body: seq[Node]
     for tmp in node.body:
       gen(tmp)                                            #! genで評価された結果がスタックに積まれるが，　ExprStmt()にラップされてるから，スタックトップに値は残らない
                                                           # -> echo "  pop rax" # readExprStmtのおかげでいらなくなった（便利です）

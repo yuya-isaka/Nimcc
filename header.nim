@@ -61,11 +61,11 @@ type Type* = ref object
 
 #? 識別子（変数， 配列)->違いはty要素で管理
 type Lvar* = ref object
-    name*: string
-    offset*: int                # offset from RBP
+    name*: string                                                                     #! 変数の登録チェック．  && グローバル変数はdata領域に値を確保する， アクセスする際の名前が必要
+    offset*: int                # offset from RBP                                     #!　スタック領域の値はこのオフセットでアクセスする．
     ty*: Type
     isLocal*: bool              #! ローカル変数かグローバル変数か
-    stringLiteral*: seq[char]            #! 文字列リテラル seq[char]時代
+    stringLiteral*: seq[char]            #! 文字列リテラル seq[char]時代                  なぜ変数型の中で値を持つのか？ -> 文字列リテラルはdata領域に値を確保するから．（実行時にスタックに動的に確保するのではない）
     # stringLiteral*: string            #! 文字列リテラル string時代
 
 type LvarList* = ref object

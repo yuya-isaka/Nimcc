@@ -178,16 +178,16 @@ proc primaryArray(): Node
 proc primary(): Node
 
 proc isFunction(): bool =
-  var tok = token
+  var tok: Token = token
   discard basetype()
-  var tmp = consumeIdent()
+  var tmp: (Token, bool) = consumeIdent()
   var isFunc: bool = tmp[1] and consume("(")
   token = tok                                                         #! トークン元に戻す（関数かどうか事前にチェックするだけで， tokenは進めない）
   return isFunc
 
 #? program = (global-lvar | function)*
 proc program*(): Program =
-  var head = new Function
+  var head: Function = new Function
   head.next = nil
   var cur: Function = head
   globals = nil
@@ -199,14 +199,14 @@ proc program*(): Program =
     else:
       globalLvar()
   
-  var prog = new Program
+  var prog: Program = new Program
   prog.globals = globals
   prog.fns = head.next
   return prog
 
 #? basetype = ("char" | int") "*"*
 proc basetype(): Type =                                                 
-  var ty = new Type
+  var ty: Type = new Type
   if consume("char"):
     ty = charType()
   else:
@@ -222,7 +222,7 @@ proc basetype(): Type =
 proc readTypeSuffix(base: var Type): Type =
   if not consume("["):
     return base
-  var size = expectNumber()
+  var size: int = expectNumber()
   expect("]")
   base = readTypeSuffix(base)                                           #! int a[3][3] のような多次元配列に対応（再帰）
   return arrayType(base, size)
@@ -230,10 +230,10 @@ proc readTypeSuffix(base: var Type): Type =
 #? 関数の引数を読む！！
 proc readFuncParam(): LvarList =
   var ty: Type = basetype()                                             #! 現状baseの型はintのみ
-  var name = expectIdent()
+  var name: string = expectIdent()
   ty = readTypeSuffix(ty)                                               #! 配列の可能性を考慮
 
-  var vl = new LvarList
+  var vl: LvarList = new LvarList
   vl.lvar = pushLvar(name, ty, true)                                          #! 関数の引数をlocalsに追加
   return vl
 
@@ -242,8 +242,8 @@ proc readFuncParams(): LvarList =
   if consume(")"):
     return nil
 
-  var head = readFuncParam()
-  var cur = head
+  var head: LvarList = readFuncParam()
+  var cur: LvarList = head
 
   while not consume(")"):
     expect(",")
@@ -258,7 +258,7 @@ proc readFuncParams(): LvarList =
 proc function(): Function =
   locals = nil                                                          # 関数内のローカル変数を保存するためのlocalsを初期化
 
-  var fn = new Function
+  var fn: Function = new Function
   discard basetype()                                                    #! 関数はintから始まると仮定してる．　basetype関数でtokenを進める
   fn.name = expectIdent()                                               # 全てのプログラムが関数の中だと考える．まずは関数名が来るはず．
 
@@ -266,9 +266,9 @@ proc function(): Function =
   fn.params = readFuncParams()                                          #! 最初に引数をローカル変数localsに追加しておく
   expect("{")
 
-  var head = new Node                                                   # ヒープにアロケート
+  var head: Node = new Node                                                   # ヒープにアロケート
   head.next = nil
-  var cur = head                                                        # 参照のコピーだから中身は同じ
+  var cur: Node = head                                                        # 参照のコピーだから中身は同じ
 
   while not consume("}"):                                               #! ループでstatement(文)を生成
     cur.next = stmt()
@@ -320,12 +320,12 @@ proc readExprStmt(): Node =
 #?      | expr ";"
 proc stmt(): Node =
   if consume("return"):
-    var node = newNode(NdReturn, expr(), tokPrev)
+    var node: Node = newNode(NdReturn, expr(), tokPrev)
     expect(";")
     return node
 
   if consume("if"):
-    var node = newNode(NdIf, tokPrev)                                   # 左辺にノードを作るわけじゃないからnewNode(NdIf, expr())としない
+    var node: Node = newNode(NdIf, tokPrev)                                   # 左辺にノードを作るわけじゃないからnewNode(NdIf, expr())としない
     expect("(")
     node.cond = expr()                                                  #! Expression
     expect(")")

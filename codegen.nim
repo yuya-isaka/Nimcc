@@ -237,7 +237,7 @@ proc emitData(prog: Program) =                            # data領域
 
     if lvar.stringLiteral != "":                               # ruiさんはこうやってbyteで指定
       for c in lvar.stringLiteral:
-        echo fmt"  .byte {int(c)}"                        #! intを入れないとだめ！！！ (charをASCII文字コードの数値に変換する)
+        echo fmt"  .byte {int(c)}"                        #! int()を入れないとだめ！！！ (charをASCII文字コードの数値に変換する)
           
     # エスケープ文字をstringから認識できなかったから（stringからASCII文字に変換できなかった） から，seq[char]を使った実装に変更
     # if lvar.stringLiteral != "":

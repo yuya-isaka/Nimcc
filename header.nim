@@ -21,15 +21,15 @@ type TokenKind* = enum
     TkIdent,              # 識別子（変数）
     TkNum,                # 整数トークン
     TkEof,                # 入力の終わりを表すトークン
-    TkStr
+    TkStr                 # 文字列リテラル
 
 type Token* = ref object
-    kind*: TokenKind      # トークンの種類
-    next*: Token          # 次の入力トークン
-    val*: int             # kindがTkNumの場合，その数値
-    str*: string          # トークン文字列
-    at*: int              # 入力文字配列のうち，どこを指しているか（先頭インデックス）
-    stringLiteral*: seq[char]
+    kind*: TokenKind            # トークンの種類
+    next*: Token                # 次の入力トークン
+    val*: int                   # kindがTkNumの場合，その数値
+    str*: string                # トークン文字列
+    at*: int                    # 入力文字配列のうち，どこを指しているか（先頭インデックス）
+    stringLiteral*: seq[char]   # 文字列リテラル
 
 var token*: Token = nil
 

@@ -41,7 +41,8 @@ proc genLval(node: Node) =
 proc load(ty: Type) =                                            
   echo "  pop rax"
 
-  if sizeType(ty) == 1:                                   #! char型の処理
+  if sizeType(ty) == 1:                                   #! char型の処理 
+  # if ty.kind == TyChar:
     echo "  movsx rax, byte ptr [rax]"                    #! RAXが指しているアドレスから1バイトを読み込んでECXに入れる -> movでALにロードすると上位ビットが0に初期化されない -> 初期化されないと依存関係が64ビットの中に残ってしまい，並列化による恩恵を受けられなくなる
   else:
     echo "  mov rax, [rax]"
@@ -52,7 +53,8 @@ proc store(ty: Type) =
   echo "  pop rdi"
   echo "  pop rax"
 
-  if sizeType(ty) == 1:                                   #! TokenKindがTkCharか確認する方がいいのでは？　と思ったけど，ん？？　配列の時とか影響する？？ コード追わないとわからん．．．
+  if sizeType(ty) == 1:                                   #! TokenKindがTkCharか確認する方がいいのでは？　と思ったけど，ん？？　配列の時とか影響する？？  char型の処理だから，この記述というよりは，1バイトの時のアセンブリを出力している．そういう意味では1sizeType() == 1 との時というふうにした方が正しい
+  # if ty.kind == TyChar:
     echo "  mov [rax], dil"
   else:
     echo "  mov [rax], rdi"
@@ -252,6 +254,7 @@ proc emitData(prog: Program) =                            # data領域
 proc loadArg(lvar: Lvar, idx: int) =                       #! スタックに確保した引数領域に， レジスタの値を代入する．　（レジスタの値は，main関数内で他の関数(addやらsubやら）を呼んだ際に，既にレジスタの中に書き出してある．)
   var sz = sizeType(lvar.ty)
   if sz == 1:
+  # if lvar.ty.kind == TyChar:
     echo fmt"  mov [rbp-{lvar.offset}], {argreg1[idx]}"
   else:
     assert(sz == 8)

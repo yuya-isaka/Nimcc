@@ -80,7 +80,7 @@ proc visit(node: Node) =
       var tmp = node.lhs
       node.lhs = node.rhs
       node.rhs = tmp
-    if node.rhs.ty.base != nil:                                   #! 右辺がポインタ.....ptr + ptr という式はない
+    if node.rhs.ty.base != nil:                                   #! また右辺がポインタ.....ptr + ptr という式はない
       errorAt("invalid pointer arithmetic operands", node.tok)
     node.ty = node.lhs.ty                                         #! 右辺値がTyPtrだったらlhsとrhsを交換してるから自動的に，　右辺値がポインタなら右辺値の型，　右辺値が数値なら左辺値の型を入れる
                                                                   #! 加算はlhsとrhsが入れ替わっても問題ない(依存してない)

@@ -52,7 +52,7 @@ proc store(ty: Type) =
   echo "  pop rdi"
   echo "  pop rax"
 
-  if sizeType(ty) == 1:
+  if sizeType(ty) == 1:                                   #! TokenKindがTkCharか確認する方がいいのでは？　と思ったけど，ん？？　配列の時とか影響する？？ コード追わないとわからん．．．
     echo "  mov [rax], dil"
   else:
     echo "  mov [rax], rdi"

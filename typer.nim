@@ -109,9 +109,9 @@ proc visit(node: Node) =
     return                                                        #! ノードごとにそれぞれ値を持っている．その値が何の型なのか決めているのか
   of NdSizeof:
     node.kind = NdNum
-    node.ty = intType()
-    node.val = sizeType(node.lhs.ty)
-    node.lhs = nil
+    node.ty = intType()                                           #! 整数で埋め込む
+    node.val = sizeType(node.lhs.ty)                              #! ここの型走査で，sizeofは計算してしまって，整数で埋め込んでおく．
+    node.lhs = nil                                                #! 左辺の型を調べたら，ここは不要になる
     return
   of NdStmtExpr:
     var last = node.body[high(node.body)]                          #! body配列の最後の要素の型を設定(途中でretunするときどうなる？)

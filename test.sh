@@ -36,9 +36,6 @@ assert2() {
 
 nim c nimcc.nim
 
-assert 2 'int main() { /* return 1; */ return 2; }'
-assert 2 'int main() { // return 1; \n
-return 2; }'
 # これがいけてまう．．．
 # assert2 0 'int main() { return "abc"[5]; }' 
 # assert2 99 'int main() { return "abc"[2]; }' 
@@ -198,5 +195,8 @@ assert 1 'int main() { ({ 0; return 1; 2; }); return 3; }'
 assert 3 'int main() { return ({ int x=3; x; }); }'
 assert 2 'int main() { return ({ 0; 1; 2; }); }'
 
+assert 2 'int main() { /* return 1; */ return 2; }'
+assert 2 'int main() { // return 1; \n
+return 2; }'
 
 echo OK

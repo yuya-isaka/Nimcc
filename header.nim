@@ -3,16 +3,11 @@
   ? enum, object, グローバル変数, 入力文字列, ライブラリ関数(errorAt) などを管理
 ]#
 
-import os
 import strutils
 
 #? 入力文字列準備
 var idx* = 0
 var input*: seq[char]
-if paramCount() != 1:
-  quit("引数の個数が正しくありません．")
-for i in commandLineParams()[0]:
-  input.add(i)
 
 
 #? トークン

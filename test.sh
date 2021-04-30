@@ -3,7 +3,8 @@ assert() {
     expected="$1"
     input="$2"
 
-    ./nimcc "$input" > tmp.s
+    # ./nimcc "$input" > tmp.s
+    ./nimcc <(echo "$input") > tmp.s
     cc -o tmp tmp.s
     ./tmp
     actual="$?"
@@ -20,7 +21,7 @@ assert2() {
     expected="$1"
     input="$2"
 
-    ./nimcc "$input" > tmp.s
+    ./nimcc <(echo "$input") > tmp.s
     cc -static -o tmp tmp.s
     ./tmp
     actual="$?"

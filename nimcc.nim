@@ -5,6 +5,7 @@
   ? 全て型付けしてる方がわかりやすいかな？？
 ]#
 
+import os
 import header
 import typer
 import parse
@@ -15,7 +16,22 @@ import tokenize
 proc alignTo(n: int, align: int): int =
   return (n + align - 1) and not (align - 1)
 
+proc readFile(): void =
+  if paramCount() != 1:
+    quit("引数の個数が正しくありません．")
+  block:
+    var f: File = open(commandLineParams()[0], FileMode.fmRead)
+    defer: close(f)
+    # echo type(commandLineParams()[0])                                     #! TaintedString -> ユーザ入力の文字列はこの型になる -> ユーザ入力の検証を忘れないようにねってのある
+    while not f.endOfFile:
+      input.add(f.readLine)
+  # for i in commandLineParams()[0]:
+  #   input.add(i)
+
 proc main() =
+
+  #? ファイル読み込み
+  readFile()
 
   #? トークナイズ
   token = tokenize()

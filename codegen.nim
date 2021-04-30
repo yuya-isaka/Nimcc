@@ -165,7 +165,7 @@ proc gen(node: Node) =
     echo "  and rax, 15"                                  #! 関数を呼ぶ前にRSPを16の倍数になるように調整(PUSHやPOPはRSPを8バイト単位で変更するから、call命令を発行するときに必ずしもRSPが16の倍数になっているとは限らん)
                                                           #! and 15, 15 -> 15   and 16, 15 -> 0   and 17, 15 -> 1
     echo fmt"  jnz .Lcall{label}"                         #! 比較結果!=0で飛ぶ(RAXが16の倍数じゃない場合飛ぶ)
-    echo "  mov rax, 0"                                   #! RAX初期化 -> 関数の呼び出し前はalが0になってないといけない
+    echo "  mov rax, 0"                                   #! RAX初期化 -> 関数の呼び出し前はalが0になってないといけない -> 浮動小数点数の引数の個数をALに入れておくという決まりから，まだ浮動小数点数がない
     echo fmt"  call {node.funcname}"
     echo fmt"  jmp .Lend{label}"
     echo fmt".Lcall{label}:"                              #! jnz .Lcallで飛んでくる

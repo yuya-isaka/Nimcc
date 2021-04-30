@@ -25,7 +25,7 @@ proc isAlnum(c: string): bool =
   return isAlpha(c) or ("0" <= c and c <= "9")
 
 # 予約語をチェック
-proc checkReserved(cur: var Token): (string, bool) =                  #! tupleを返す
+proc checkReserved(): (string, bool) =                  #! tupleを返す
 
     # "return", "if", "else"
     var strList1 = ["return", "if", "else", "while", "for", "int", "sizeof", "char"]    #! arrayになる
@@ -69,6 +69,39 @@ proc getEscapeChar(c: char): char =
   of '0': return char(0)
   else: return c
 
+proc strstr(): bool =
+  while len(input) > idx and len(input) > idx+1:
+    var tmpStr = $input[idx] & $input[idx+1]
+    if tmpStr == "*/":
+      idx += 2
+      return true
+    inc(idx)
+  return false
+
+proc checkComment(): bool =
+  var tmpStr = $input[idx]
+  if len(input) > idx + 1:
+    tmpStr.add($input[idx+1])
+
+  if tmpStr == "//":
+    idx += 2
+
+    var tmpChar: char
+    while tmpChar != '\n':
+      if input[idx] == '\\':
+        tmpChar = getEscapeChar(input[idx+1])                   #! 無理矢理 \n を改行に入れて対応
+      inc(idx)
+    inc(idx)
+    return true
+
+  if tmpStr == "/*":
+    idx += 2
+    if not strstr():
+      errorAt("unclosed block comment", token)
+    return true
+
+  return false
+
 # 新しいトークンを作成してcurに繋げる
 proc newToken(kind: TokenKind, cur: Token, str: string): Token =
   var tok = new Token
@@ -78,6 +111,7 @@ proc newToken(kind: TokenKind, cur: Token, str: string): Token =
   cur.next = tok
   return tok
 
+# オーバーロード（文字列リテラル）
 proc newToken(kind: TokenKind, cur: Token, stringLiteral: seq[char]): Token =
   var tok = new Token
   tok.kind = kind
@@ -101,8 +135,13 @@ proc tokenize*(): Token =
       inc(idx)
       continue
 
+    #? コメント
+    var commentFlag = checkComment()
+    if commentFlag:
+      continue
+
     #? 予約語(こいつは先に)
-    var tmpStr = checkReserved(cur)                 #! TkReservedに関するトークン作成はこの関数で!
+    var tmpStr = checkReserved()                 #! TkReservedに関するトークン作成はこの関数で!
     if tmpStr[1]:
       cur = newToken(TkReserved, cur, tmpStr[0])
       idx += len(tmpStr[0])                         # 読んだ文字列文インデックスを進める

@@ -36,6 +36,9 @@ assert2() {
 
 nim c nimcc.nim
 
+assert 2 'int main() { int x=2; { int x=3; } return x; }'
+assert 2 'int main() { int x=2; { int x=3; } { int y=4; return x; }}'
+assert 3 'int main() { int x=2; { x=3; } return x; }'
 # これがいけてまう．．．
 # assert2 0 'int main() { return "abc"[5]; }' 
 # assert2 99 'int main() { return "abc"[2]; }' 

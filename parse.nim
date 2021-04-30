@@ -10,6 +10,7 @@ import strformat
 
 var locals: LvarList                                            #! ローカル変数（連結リスト）
 var globals: LvarList                                           #! グローバル変数（連結リスト）
+var scope: LvarList
 var tokPrev: Token = nil                                        #! エラー表示用！　consumeで進める前のTokenを保持．　エラー表示に使える．　グローバル変数は使い所考えると有益
 var cnt: int = 0
 
@@ -69,29 +70,41 @@ proc expectIdent(): string =
 
 #? 既に登録されている変数がチェック
 proc findLvar(tok: Token): (Lvar, bool) =                       #! tupleを返す(この設計は直さないといけん)
-  #? ローカル変数チェク
-  var vl: LvarList = locals
+
+  # scope内の変数チェック
+  var vl: LvarList = scope                                      #! scopeを調べる
   while vl != nil:
-    var lvar = vl.lvar
-    if lvar.name == tok.str:
-      return (lvar, true)
+    if vl.lvar.name == tok.str:
+      return (vl.lvar, true)
     vl = vl.next
 
-  #? グローバル変数チェック
-  vl = globals
-  while vl != nil:
-    var lvar = vl.lvar
-    if lvar.name == tok.str:
-      return (lvar, true)
+  # #? ローカル変数チェク
+  # var vl: LvarList = locals
+  # while vl != nil:
+  #   var lvar = vl.lvar
+  #   if lvar.name == tok.str:
+  #     return (lvar, true)
+  #   vl = vl.next
+
+  # #? グローバル変数チェック
+  # vl = globals
+  # while vl != nil:
+  #   var lvar = vl.lvar
+  #   if lvar.name == tok.str:
+  #     return (lvar, true)
+  #   vl = vl.next
+
   return (nil, false)                                           #! 一度バグって何も動かなくなった．ここでnilを返すように変更したのが良かった．（初期化されていないオブジェクトを返そうとしていた？）
 
 #? 変数の連結リストに追加
 proc pushLvar(name: string, ty: Type, isLocal: bool): Lvar =
+  # 変数作成
   var lvar = new Lvar
   lvar.name = name
   lvar.ty = ty
   lvar.isLocal = isLocal
 
+  # どっちの連結リストに追加するか決定
   var vl = new LvarList
   vl.lvar = lvar
   if isLocal:                          #! ローカル変数 
@@ -100,6 +113,13 @@ proc pushLvar(name: string, ty: Type, isLocal: bool): Lvar =
   else:                                #! グローバル変数
     vl.next = globals
     globals = vl
+
+  # scope内に変数追加
+  var sc = new LvarList
+  sc.lvar = lvar
+  sc.next = scope                        # 右から左に生やしていく
+  scope = sc
+
   return lvar
 
 #---------------------------------------------------------------
@@ -315,7 +335,7 @@ proc stmt(): Node =
     return node
 
   if consume("while"):
-    var node = newNode(NdWhile, tokPrev)
+    var node: Node = newNode(NdWhile, tokPrev)
     expect("(")
     node.cond = expr()                                                  #! node.condのexpression(式）の評価結果はcodegen内で，pop raxする予定があるから，readExprStmtでラップするのはだめ!!!!!!
     expect(")")
@@ -323,7 +343,7 @@ proc stmt(): Node =
     return node
 
   if consume("for"):
-    var node = newNode(NdFor, tokPrev)
+    var node: Node = newNode(NdFor, tokPrev)
     expect("(")
     if not consume(";"):
       node.init = readExprStmt()                                        # !readExprStmtでラップしないと，スタックに評価結果が残ってしまう, 式の文！
@@ -338,15 +358,17 @@ proc stmt(): Node =
     return node
 
   if consume("{"):                                                      #! NdStmtExprと違って，値を返さない（文）
-    var node = newNode(NdBlock, tokPrev)
+    var node: Node = newNode(NdBlock, tokPrev)
+    var sc: LvarList = scope                                                      # 現状のscope記憶
     while not consume("}"):                                             #! ruiさんのとは違う実装だよー気をつけてなー未来の自分〜
       node.body.add(stmt())                                             #! 配列にしてみた．
+    scope = sc                                                          # scope書き戻し
     return node
 
   if isTypeName():                                                      #! 型名かチラ見！！！ （intかchar)
     return declaration()                                                #! intなら変数として格納!!!!
 
-  var node = readExprStmt()                                             #! 式の文(a=3; とかとか)
+  var node: Node = readExprStmt()                                             #! 式の文(a=3; とかとか)
   expect(";")                                                           #! 式にセミコロンがつくと文になる．
   return node
 
@@ -436,22 +458,25 @@ proc unary(): Node =
 #? primaryArray = primary ("[" expr "]")*
 #? 配列の演算子は特別，　a[3] -> *(a+3) に書き換える．
 proc primaryArray(): Node =
-  var node = primary()                                                    # 配列だったらこのnodeの型がTyArrayになってる
+  var node: Node = primary()                                                    # 配列だったらこのnodeの型がTyArrayになってる
 
   while consume("["):
-    var exp = newNode(NdAdd, node, expr(), tokPrev)                       #! 左辺のnodeには識別子がくる． この左辺はNdLvarとして識別され，アドレス(RBP-offset)をゲットする．(これはロードしない) そのオフセットにexpr()で評価した数値を足すことで， 配列の要素にアクセスできる．
+    var exp: Node = newNode(NdAdd, node, expr(), tokPrev)                       #! 左辺のnodeには識別子がくる． この左辺はNdLvarとして識別され，アドレス(RBP-offset)をゲットする．(これはロードしない) そのオフセットにexpr()で評価した数値を足すことで， 配列の要素にアクセスできる．
     expect("]")
     node = newNode(NdDeref, exp, tokPrev)                                 #! C言語では，配列は，ポインタ経由にアクセスする．
   
   return node
 
 proc stmtExpr(): Node =
-  var node = newNode(NdStmtExpr, tokPrev)                               #! NdBlockと違って最後の値を返す！！！！！(途中にreturnがあればそれを返す) -> 式だから
-  var cur = new Node
+  var sc: LvarList = scope                                              # 現状のscope
+  var node: Node = newNode(NdStmtExpr, tokPrev)                               #! NdBlockと違って最後の値を返す！！！！！(途中にreturnがあればそれを返す) -> 式だから
+  var cur: Node = new Node
   while not consume("}"):                                             #! ruiさんのとは違う実装だよー気をつけてなー未来の自分〜
     cur = stmt()
     node.body.add(cur)                                                    #! 配列にしてみた．
   expect(")")
+
+  scope = sc                                                             # scope書き戻し     
 
   if cur.kind != NdExprStmt:                                                
     errorAt("stmt expr returning void is not supported", cur.tok)

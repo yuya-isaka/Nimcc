@@ -8,9 +8,9 @@
 import os
 import header
 import typer
-import parse
+import parser
 import codegen
-import tokenize
+import tokenizer
 
 # 無理矢理オフセット（スタックサイズ）を8の倍数にする.  (今までは全部8バイトだったが，Char型が1バイトになったため，全体のstacksizeが8の倍数じゃない可能性がある)
 proc alignTo(n: int, align: int): int =

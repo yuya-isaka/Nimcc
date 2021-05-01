@@ -166,7 +166,7 @@ proc gen(node: Node) =
                                                           #! and 15, 15 -> 15   and 16, 15 -> 0   and 17, 15 -> 1
     echo fmt"  jnz .Lcall{label}"                         #! 比較結果!=0で飛ぶ(RAXが16の倍数じゃない場合飛ぶ)
     echo "  mov rax, 0"                                   #! RAX初期化 -> 関数の呼び出し前はalが0になってないといけない -> 浮動小数点数の引数の個数をALに入れておくという決まりから，まだ浮動小数点数がない
-    echo fmt"  call {node.funcname}"
+    echo fmt"  call {node.funcname}"                      #! Makefile の gcc -static -o tmp tmp.s でスタティックにリンクし， libc標準ライブラリの関数(/usr/lib/x86_64-linux-gnu/libc.aのprintf.o)のコードが，実行ファイルにコピーしながら実行ファイル作成 だからcallで飛べる
     echo fmt"  jmp .Lend{label}"
     echo fmt".Lcall{label}:"                              #! jnz .Lcallで飛んでくる
     echo "  sub rsp, 8"                                   #! スタックを伸ばす(RSPが16の倍数になるように調整)

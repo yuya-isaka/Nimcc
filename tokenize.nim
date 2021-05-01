@@ -180,7 +180,7 @@ proc tokenize*(): Token =
     #   inc(idx)
     #   continue
 
-    #? 識別子
+    #? 識別子 (ここでprintfなどのlibcに含まれる関数も読み込む)
     if isAlpha($input[idx]):
       var tmpStr: string = $input[idx]
       inc(idx)

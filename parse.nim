@@ -14,6 +14,8 @@ var scope: LvarList
 var tokPrev: Token = nil                                        #! エラー表示用！　consumeで進める前のTokenを保持．　エラー表示に使える．　グローバル変数は使い所考えると有益
 var cnt: int = 0
 
+#! Token関係----------------------------------------------------------------------------------------------------------------------------
+
 proc chirami(s: string): bool =
   if token.kind != TkReserved or token.str != s:
     return false
@@ -22,7 +24,10 @@ proc chirami(s: string): bool =
 proc isTypeName(): bool =
   return chirami("int") or chirami("char")
 
-#---------------------------------------------------------------
+proc atEof(): bool =
+  return token.kind == TkEof
+
+#! Token関係, token進める----------------------------------------------------------------------------------------------------------------------------
 
 proc consume(s: string): bool =
   if not chirami(s):
@@ -41,12 +46,9 @@ proc expectNumber(): int =
   if token.kind != TkNum:
     errorAt("数ではありません．", token)
 
-  var val = token.val
+  var val: int = token.val
   token = token.next
   return val
-
-proc atEof(): bool =
-  return token.kind == TkEof
 
 # ?変数チェック1
 proc consumeIdent(): (Token, bool) =
@@ -62,11 +64,18 @@ proc expectIdent(): string =
   if token.kind != TkIdent:
     errorAt("識別子ではありません", token)
 
-  var val = token.str
+  var val: string = token.str
   token = token.next
   return val
 
-#---------------------------------------------------------------
+# ?文字列リテラルチェック
+proc consumeStr(): bool =
+  if token.kind != TkStr:
+    return false
+  token = token.next
+  return true
+
+#! 変数関係----------------------------------------------------------------------------------------------------------------------------
 
 #? 既に登録されている変数がチェック
 proc findLvar(tok: Token): (Lvar, bool) =                       #! tupleを返す(この設計は直さないといけん)
@@ -99,13 +108,13 @@ proc findLvar(tok: Token): (Lvar, bool) =                       #! tupleを返�
 #? 変数の連結リストに追加
 proc pushLvar(name: string, ty: Type, isLocal: bool): Lvar =
   # 変数作成
-  var lvar = new Lvar
+  var lvar: Lvar = new Lvar
   lvar.name = name
   lvar.ty = ty
   lvar.isLocal = isLocal
 
   # どっちの連結リストに追加するか決定
-  var vl = new LvarList
+  var vl: LvarList = new LvarList
   vl.lvar = lvar
   if isLocal:                          #! ローカル変数 
     vl.next = locals
@@ -115,19 +124,19 @@ proc pushLvar(name: string, ty: Type, isLocal: bool): Lvar =
     globals = vl
 
   # scope内に変数追加
-  var sc = new LvarList
+  var sc: LvarList = new LvarList
   sc.lvar = lvar
   sc.next = scope                        # 右から左に生やしていく
   scope = sc
 
   return lvar
 
-#---------------------------------------------------------------
+#! newNode ----------------------------------------------------------------------------------------------------------------------------
 
 #? 多重ディスパッチ, オーバーロード
 #? kind(全ての元となる), こいつ単体では何の値も持っていない
 proc newNode(kind: NodeKind, tok: Token): Node =
-  var node = new Node
+  var node: Node = new Node
   node.kind = kind
   node.tok = tok
   return node
@@ -154,18 +163,15 @@ proc newNode(val: int, tok: Token): Node =
 
 #? lvar 
 proc newNode(lvar: Lvar, tok: Token): Node =
-  var node = newNode(NdLvar, tok)
+  var node: Node = newNode(NdLvar, tok)
   node.lvar = lvar
   return node
 
-#---------------------------------------------------------------
+#! 生成規則->関数マッピング----------------------------------------------------------------------------------------------------------------------------
 
-#! 優先度低い順
+# 優先度低い順
 proc program*(): Program
 proc function(): Function
-proc basetype(): Type
-proc globalLvar(): void
-proc declaration(): Node
 proc stmt(): Node
 proc expr(): Node
 proc assign(): Node
@@ -177,32 +183,7 @@ proc unary(): Node
 proc primaryArray(): Node
 proc primary(): Node
 
-proc isFunction(): bool =
-  var tok: Token = token
-  discard basetype()
-  var tmp: (Token, bool) = consumeIdent()
-  var isFunc: bool = tmp[1] and consume("(")
-  token = tok                                                         #! トークン元に戻す（関数かどうか事前にチェックするだけで， tokenは進めない）
-  return isFunc
-
-#? program = (global-lvar | function)*
-proc program*(): Program =
-  var head: Function = new Function
-  head.next = nil
-  var cur: Function = head
-  globals = nil
-
-  while not atEof():
-    if isFunction():
-      cur.next = function()
-      cur = cur.next
-    else:
-      globalLvar()
-  
-  var prog: Program = new Program
-  prog.globals = globals
-  prog.fns = head.next
-  return prog
+#! 補助関数----------------------------------------------------------------------------------------------------------------------------
 
 #? basetype = ("char" | int") "*"*
 proc basetype(): Type =                                                 
@@ -216,8 +197,6 @@ proc basetype(): Type =
   while consume("*"):
     ty = pointerType(ty)
   return ty
-
-#---------------------------------------------------------------
 
 proc readTypeSuffix(base: var Type): Type =
   if not consume("["):
@@ -252,20 +231,132 @@ proc readFuncParams(): LvarList =
 
   return head
 
+proc isFunction(): bool =
+  var tok: Token = token
+  discard basetype()
+  var tmp: (Token, bool) = consumeIdent()
+  var isFunc: bool = tmp[1] and consume("(")
+  token = tok                                                         #! トークン元に戻す（関数かどうか事前にチェックするだけで， tokenは進めない）
+  return isFunc
+
+proc globalLvar() =
+  var ty: Type = basetype()
+  var name: string = expectIdent()
+  ty = readTypeSuffix(ty)
+  expect(";")
+  discard pushLvar(name, ty, false)
+
+proc readExprStmt(): Node =
+  var tok: Token = token                                                       # この関数を呼び出すときはconsumeでtokenの連結が進められないから．現在参照している部分を見ればいい
+  return newNode(NdExprStmt, expr(), tok)
+
+proc stmtExpr(): Node =
+  var sc: LvarList = scope                                              # 現状のscope
+  var node: Node = newNode(NdStmtExpr, tokPrev)                               #! NdBlockと違って最後の値を返す！！！！！(途中にreturnがあればそれを返す) -> 式だから
+  var cur: Node = new Node
+  while not consume("}"):                                             #! ruiさんのとは違う実装だよー気をつけてなー未来の自分〜
+    cur = stmt()
+    node.body.add(cur)                                                    #! 配列にしてみた．
+  expect(")")
+
+  scope = sc                                                             # scope書き戻し     
+
+  if cur.kind != NdExprStmt:                                                
+    errorAt("stmt expr returning void is not supported", cur.tok)
+  # cur = cur.lhs
+  node.body[high(node.body)] = cur.lhs                                    #! 最後は左辺を入力することで, NdExprStmtから抜ける（add rsp, 8)をしないようにする
+  return node
+
+#? funcArgs =  "(" (assign ("," assign)*)? ")"      関数の引数を評価し返す -> node.argsで持つ
+proc funcArgs(): Node =
+  if consume(")"):
+    return nil
+  
+  var head: Node = expr()                                                       # 元々assign()だったけど分かりにくいから， expr()にした
+  var cur: Node = head
+  while consume(","):
+    cur.next = expr()
+    cur = cur.next
+  expect(")")
+  return head                                                             #! 評価結果をNodeの連結リストで返す．
+
+proc declaration(): Node =
+  var tok: Token = token
+  var ty: Type = basetype()
+  var name: string = expectIdent()
+  ty = readTypeSuffix(ty)                                               #! 配列の可能性を考慮
+  var lvar: Lvar = pushLvar(name, ty, true)                                   #! 型付けされたローカル変数をlocalsに追加〜〜〜
+
+  if consume(";"):                                                      #! 初期化されてない変数宣言
+    return newNode(NdNull, tokPrev)
+
+  expect("=")
+  var lhs: Node = newNode(lvar, tok)                                    # 変数生成
+  var rhs: Node = expr()
+  expect(";")
+  var node: Node = newNode(NdAssign, lhs, rhs, tok)                     #! 代入処理，　int a = 3;
+  return newNode(NdExprStmt, node, tok)                                 #! 代入では評価結果をスタックに残す必要はない, 式の文
+
+#! マッピングされた関数(再帰下降構文解析----------------------------------------------------------------------------------------------------------------------------
+
+#? program = (function | global-lvar)*
 #? function = basetype ident "(" params? ")" "{" stmt* "}"
-#? params   = param ("," param)*
-#? param    = basetype ident
+#?          params   = param ("," param)*
+#?          param    = basetype ident
+#? stmt = "return" expr ";"
+#?      | "if" "(" expr ")" stmt ("else" stmt)?
+#?      | "while" "(" expr ")" stmt
+#?      | "for" "(" expr? ";" expr? ";" expr? ")" stmt
+#?      | "{" stmt* "}"
+#?      | declaration
+#?      | expr ";"
+#?      declaration = basetype ident ("[" num "]")* ("=" expr) ";"
+#? expr = assign
+#? assign = equality ("=" assign)?
+#? equality = relational ("==" relational | "!=" relational)*
+#? relational =  add ("<" add | "<=" add | ">" add | ">=" add)*
+#? add = mul ("+" mul | "-" mul)*
+#? mul = unary ("*" unary | "/" unary)*
+#? unary = ("+" | "-" | "&" | "*" )? unary 
+#?         | primaryArray                                                 配列の演算子は特別，　a[3] -> *(a+3) に書き換える．
+#? primaryArray = primary ("[" expr "]")*                                 配列の演算子は特別，　a[3] -> *(a+3) に書き換える．
+#? primary =  "(" expr ")" | "sizeof" unary | ident func-args? | num |
+
+proc program*(): Program =
+  # 関数の連結リスト作成
+  var head: Function = new Function
+  head.next = nil
+  var cur: Function = head
+  globals = nil
+
+  # 関数かグローバル変数
+  while not atEof():
+    if isFunction():
+      cur.next = function()
+      cur = cur.next
+    else:
+      globalLvar()
+  
+  # プログラム作成
+  var prog: Program = new Program
+  prog.globals = globals
+  prog.fns = head.next
+  return prog
+
 proc function(): Function =
   locals = nil                                                          # 関数内のローカル変数を保存するためのlocalsを初期化
 
+  # 関数作成
   var fn: Function = new Function
   discard basetype()                                                    #! 関数はintから始まると仮定してる．　basetype関数でtokenを進める
   fn.name = expectIdent()                                               # 全てのプログラムが関数の中だと考える．まずは関数名が来るはず．
 
+  # 引数読み込み
   expect("(")
   fn.params = readFuncParams()                                          #! 最初に引数をローカル変数localsに追加しておく
   expect("{")
 
+  # 関数の中身， Node連結リスト作成
   var head: Node = new Node                                                   # ヒープにアロケート
   head.next = nil
   var cur: Node = head                                                        # 参照のコピーだから中身は同じ
@@ -278,46 +369,6 @@ proc function(): Function =
   fn.locals = locals                                                    #! 引数,ローカル変数の連結リストの先頭取得
   return fn
 
-#---------------------------------------------------------------
-
-proc globalLvar() =
-  var ty = basetype()
-  var name = expectIdent()
-  ty = readTypeSuffix(ty)
-  expect(";")
-  discard pushLvar(name, ty, false)
-
-#? declaration = basetype ident ("[" num "]")* ("=" expr) ";"
-proc declaration(): Node =
-  var tok = token
-  var ty = basetype()
-  var name = expectIdent()
-  ty = readTypeSuffix(ty)                                               #! 配列の可能性を考慮
-  var lvar = pushLvar(name, ty, true)                                   #! 型付けされたローカル変数をlocalsに追加〜〜〜
-
-  if consume(";"):                                                      #! 初期化されてない変数宣言
-    return newNode(NdNull, tokPrev)
-
-  expect("=")
-  var lhs: Node = newNode(lvar, tok)                                    # 変数生成
-  var rhs: Node = expr()
-  expect(";")
-  var node: Node = newNode(NdAssign, lhs, rhs, tok)                     #! 代入処理，　int a = 3;
-  return newNode(NdExprStmt, node, tok)                                 #! 代入では評価結果をスタックに残す必要はない, 式の文
-
-#---------------------------------------------------------------
-
-proc readExprStmt(): Node =
-  var tok = token                                                       # この関数を呼び出すときはconsumeでtokenの連結が進められないから．現在参照している部分を見ればいい
-  return newNode(NdExprStmt, expr(), tok)
-
-#? stmt = "return" expr ";"
-#?      | "if" "(" expr ")" stmt ("else" stmt)?
-#?      | "while" "(" expr ")" stmt
-#?      | "for" "(" expr? ";" expr? ";" expr? ")" stmt
-#?      | "{" stmt* "}"
-#?      | declaration
-#?      | expr ";"
 proc stmt(): Node =
   if consume("return"):
     var node: Node = newNode(NdReturn, expr(), tokPrev)
@@ -372,19 +423,16 @@ proc stmt(): Node =
   expect(";")                                                           #! 式にセミコロンがつくと文になる．
   return node
 
-#? expr = assign
 proc expr(): Node =
   return assign()
 
-#? assign = equality ("=" assign)?
 proc assign(): Node =
-  var node = equality()
+  var node: Node = equality()
 
   if consume("="):
     node = newNode(NdAssign, node, assign(), tokPrev)                   #! a=b=3とかしたいから，ここは右辺はasign()
   return node
 
-#? equality = relational ("==" relational | "!=" relational)*
 proc equality(): Node =
   var node: Node = relational()
 
@@ -396,7 +444,6 @@ proc equality(): Node =
     else:
       return node
 
-#? relational =  add ("<" add | "<=" add | ">" add | ">=" add)*
 proc relational(): Node =
   var node: Node = add()
 
@@ -412,7 +459,6 @@ proc relational(): Node =
     else:
       return node
 
-#? add = mul ("+" mul | "-" mul)*
 proc add(): Node =
   var node: Node = mul()
 
@@ -424,7 +470,6 @@ proc add(): Node =
     else:
       return node
 
-#? mul = unary ("*" unary | "/" unary)*
 proc mul(): Node =
   var node: Node = unary()
 
@@ -436,8 +481,6 @@ proc mul(): Node =
     else:
       return node
 
-#? unary = ("+" | "-" | "&" | "*" )? unary 
-#?         | primaryArray                                                 配列の演算子は特別，　a[3] -> *(a+3) に書き換える．
 proc unary(): Node =
   if consume("+"):
     return unary()                                                        # これ忘れてた．．++とかもそりゃいいよね
@@ -453,10 +496,6 @@ proc unary(): Node =
 
   return primaryArray()
 
-#---------------------------------------------------------------
-
-#? primaryArray = primary ("[" expr "]")*
-#? 配列の演算子は特別，　a[3] -> *(a+3) に書き換える．
 proc primaryArray(): Node =
   var node: Node = primary()                                                    # 配列だったらこのnodeの型がTyArrayになってる
 
@@ -467,73 +506,39 @@ proc primaryArray(): Node =
   
   return node
 
-proc stmtExpr(): Node =
-  var sc: LvarList = scope                                              # 現状のscope
-  var node: Node = newNode(NdStmtExpr, tokPrev)                               #! NdBlockと違って最後の値を返す！！！！！(途中にreturnがあればそれを返す) -> 式だから
-  var cur: Node = new Node
-  while not consume("}"):                                             #! ruiさんのとは違う実装だよー気をつけてなー未来の自分〜
-    cur = stmt()
-    node.body.add(cur)                                                    #! 配列にしてみた．
-  expect(")")
-
-  scope = sc                                                             # scope書き戻し     
-
-  if cur.kind != NdExprStmt:                                                
-    errorAt("stmt expr returning void is not supported", cur.tok)
-  # cur = cur.lhs
-  node.body[high(node.body)] = cur.lhs                                    #! 最後は左辺を入力することで, NdExprStmtから抜ける（add rsp, 8)をしないようにする
-  return node
-
-#? funcArgs =  "(" (assign ("," assign)*)? ")"
-#? 関数の引数を評価し返す -> node.argsで持つ
-proc funcArgs(): Node =
-  if consume(")"):
-    return nil
-  
-  var head = expr()                                                       # 元々assign()だったけど分かりにくいから， expr()にした
-  var cur = head
-  while consume(","):
-    cur.next = expr()
-    cur = cur.next
-  expect(")")
-  return head                                                             #! 評価結果をNodeの連結リストで返す．
-
-#? primary =  "(" expr ")" | "sizeof" unary | ident func-args? | num |
 proc primary(): Node =
   if consume("("):
     if consume("{"):
       return stmtExpr()
-    var node = expr()                                                     # 再帰的に使う
+    var node: Node = expr()                                                     # 再帰的に使う
     expect(")")
     return node
 
   if consume("sizeof"):
     return newNode(NdSizeof, unary(), tokPrev)
 
-  var tok = consumeIdent()                                                # Token, bool が返る（tuple）
+  var tok: (Token, bool) = consumeIdent()                                                # Token, bool が返る（tuple）
   if tok[1]:
 
     #? 関数
     if consume("("):                                                      #! 「見知らぬ名前と，(」が続いていたら，それは関数と判定し，引数を評価して返す
-      var node = newNode(NdFuncall, tokPrev)
+      var node: Node = newNode(NdFuncall, tokPrev)
       node.funcname = tok[0].str
       node.args = funcArgs()
       return node
 
     #? 変数
-    var tmpLvar = findLvar(tok[0])                                        # LvarList, bool
+    var tmpLvar: (Lvar, bool) = findLvar(tok[0])                                        # Lvar, bool
     if not tmpLvar[1]:
                                                                           # tmpLvar[0] = pushLvar(tok[0].str)  # 昔はここで変数をlocalsに追加してた．　今は上の方でintを見つけた瞬間に格納している．
       errorAt("undefined variable", tok[0])                               #! ここで見たことない変数が来るのはおかしいからエラー
     return newNode(tmpLvar[0], tokPrev)                                   #! 変数生成
     
   #? 文字列リテラル
-  var tmpTok = token
-  if token.kind == TkStr:
-    token = token.next
-
-    var ty = arrayType(charType(), tmpTok.stringLiteral.len)                        #! 文字列リテラルはChar型の配列,  null終端分の文字列を+1で追加
-    var lvar = pushLvar(fmt".L.data.{cnt}", ty, false)
+  var tmpTok: Token = token
+  if consumeStr():
+    var ty: Type = arrayType(charType(), tmpTok.stringLiteral.len)                        #! 文字列リテラルはChar型の配列,  null終端分の文字列を+1で追加
+    var lvar: Lvar = pushLvar(fmt".L.data.{cnt}", ty, false)
     inc(cnt)
     lvar.stringLiteral = tmpTok.stringLiteral
     return newNode(lvar, tmpTok)

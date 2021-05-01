@@ -1,6 +1,6 @@
 test:
 	nim c nimcc.nim
-	./nimcc tests > tmp.s
+	./nimcc test.c > tmp.s
 	gcc -static -o tmp tmp.s
 	./tmp
 

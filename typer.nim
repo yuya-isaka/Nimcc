@@ -36,7 +36,6 @@ proc arrayType*(base: Type, size: int): Type =
   ty.arraySize = size
   return ty
 
-
 #? スタックで確保するバイト数
 proc sizeType*(ty: Type): int =                         # これよく書き間違える．．
   case ty.kind:

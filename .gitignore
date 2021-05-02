@@ -6,3 +6,5 @@ nimcc
 .DS_Store
 test.nim
 test
+memo
+test.sh

@@ -1,10 +1,10 @@
 test:
-	nim c nimcc.nim
-	./nimcc test.c > tmp.s
+	nim c src/nimcc.nim
+	./src/nimcc test.c > tmp.s
 	gcc -static -o tmp tmp.s
 	./tmp
 
 clean:
-	rm -f nimcc *.o *~ tmp*
+	rm -f src/nimcc *.o *~ tmp*
 
 .PHONY: test clean

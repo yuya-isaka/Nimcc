@@ -43,9 +43,24 @@ proc sizeType*(ty: Type): int =                         # これよく書き間�
     return 8
   of TyChar:
     return 1
-  else:
-    assert(ty.kind == TyArray)                            # 現状，intとptr以外はarray
+  of TyArray:
     return sizeType(ty.base) * ty.arraySize
+  else:
+    assert(ty.kind == TyStruct)
+    var mem = ty.members
+    while mem.next != nil:
+      mem = mem.next
+    return mem.offset + sizeType(mem.ty)              # メンバー変数最後尾にアクセスするためのオフセットに，メンバー最後尾のオフセットを足す
+
+#? メンバー変数持ってるか確認
+proc findMember(ty: Type, name: string): Member =     # メンバー変数探し
+  assert(ty.kind == TyStruct)
+  var mem = ty.members
+  while mem != nil:
+    if mem.name == name:
+      return mem
+    mem = mem.next
+  return nil
 
 #? nodeの持つ全ての要素nodeに訪れる．（再帰ループ)
 proc visit(node: Node) =
@@ -115,6 +130,14 @@ proc visit(node: Node) =
   of NdStmtExpr:
     var last = node.body[high(node.body)]                          #! body配列の最後の要素の型を設定(途中でretunするときどうなる？)
     node.ty = last.ty
+    return
+  of NdMember:                                                    #? 構造体メンバーへのアクセスがあった時(左辺に構造体メンバーが入ってる)
+    if node.lhs.ty.kind != TyStruct:                              #? 構造体かチェック
+      errorAt("not a struct", node.tok)
+    node.member = findMember(node.lhs.ty, node.memberName)        #? 構造体が存在しているか確認　＆　node.memberに追加
+    if node.member == nil:
+      errorAt("specified member does not exist", node.tok)
+    node.ty = node.member.ty                                      #? Nodeの型を構造体メンバーに合わせる
     return
   else:
     discard

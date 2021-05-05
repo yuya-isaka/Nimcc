@@ -22,7 +22,7 @@ proc chirami(s: string): bool =
   return true
 
 proc isTypeName(): bool =
-  return chirami("int") or chirami("char")
+  return chirami("int") or chirami("char") or chirami("struct")
 
 proc atEof(): bool =
   return token.kind == TkEof
@@ -180,19 +180,25 @@ proc relational(): Node
 proc add(): Node
 proc mul(): Node
 proc unary(): Node
-proc primaryArray(): Node
+proc postFix(): Node
 proc primary(): Node
 
 #! 補助関数----------------------------------------------------------------------------------------------------------------------------
 
-#? basetype = ("char" | int") "*"*
+proc structDecl(): Type
+
+#? basetype = ("char" | int" | struct-decl) "*"*
 proc basetype(): Type =                                                 
+  if not isTypeName():
+    errorAt("typename expected", token)
+
   var ty: Type = new Type
   if consume("char"):
     ty = charType()
-  else:
-    expect("int")
+  elif consume("int"):
     ty = intType()                                                      #! 現状char以外はint
+  else:
+    ty = structDecl()
 
   while consume("*"):
     ty = pointerType(ty)
@@ -297,6 +303,41 @@ proc declaration(): Node =
   var node: Node = newNode(NdAssign, lhs, rhs, tok)                     #! 代入処理，　int a = 3;
   return newNode(NdExprStmt, node, tok)                                 #! 代入では評価結果をスタックに残す必要はない, 式の文
 
+#? 構造体メンバー作成
+proc structMember(): Member =
+  var mem = new Member
+  mem.ty = basetype()                               # 型取得
+  mem.name = expectIdent()                          # 変数名
+  mem.ty = readTypeSuffix(mem.ty)                   # suffix取得（配列なら[]）
+  expect(";")
+  return mem
+
+#? 構造体作成 -> 型がメンバー変数を持つ（後々，typer.nimでnode.memberに移る）
+proc structDecl(): Type =
+  expect("struct")
+  expect("{")
+
+  var head = new Member
+  head.next = nil
+  var cur = head
+
+  while not consume("}"):                            # 構造体の中身を読む
+    cur.next = structMember()
+    cur = cur.next
+
+  var ty = new Type
+  ty.kind = TyStruct
+  ty.members = head.next                            # 中身をmembers属性に追加
+
+  var offset = 0
+  var mem = ty.members
+  while mem != nil:
+    mem.offset = offset                             # それぞれのメンバー変数のオフセット計算
+    offset += sizeType(mem.ty)
+    mem = mem.next
+  
+  return ty
+
 #! マッピングされた関数(再帰下降構文解析----------------------------------------------------------------------------------------------------------------------------
 
 #? program = (function | global-lvar)*
@@ -318,8 +359,8 @@ proc declaration(): Node =
 #? add = mul ("+" mul | "-" mul)*
 #? mul = unary ("*" unary | "/" unary)*
 #? unary = ("+" | "-" | "&" | "*" )? unary 
-#?         | primaryArray                                                 配列の演算子は特別，　a[3] -> *(a+3) に書き換える．
-#? primaryArray = primary ("[" expr "]")*                                 配列の演算子は特別，　a[3] -> *(a+3) に書き換える．
+#?         | postFix                                                 配列の演算子は特別，　a[3] -> *(a+3) に書き換える．
+#? postFix = primary ("[" expr "]" | "." ident)*                                 配列の演算子は特別，　a[3] -> *(a+3) に書き換える．
 #? primary =  "(" expr ")" | "sizeof" unary | ident func-args? | num |
 
 proc program*(): Program =
@@ -494,17 +535,26 @@ proc unary(): Node =
   if consume("*"):
     return newNode(NdDeref, unary(), tokPrev)
 
-  return primaryArray()
+  return postFix()
 
-proc primaryArray(): Node =
+proc postFix(): Node =
   var node: Node = primary()                                                    # 配列だったらこのnodeの型がTyArrayになってる
 
-  while consume("["):
-    var exp: Node = newNode(NdAdd, node, expr(), tokPrev)                       #! 左辺のnodeには識別子がくる． この左辺はNdLvarとして識別され，アドレス(RBP-offset)をゲットする．(これはロードしない) そのオフセットにexpr()で評価した数値を足すことで， 配列の要素にアクセスできる．
-    expect("]")
-    node = newNode(NdDeref, exp, tokPrev)                                 #! C言語では，配列は，ポインタ経由にアクセスする．
-  
-  return node
+  while true:
+    # 配列アクセス
+    if consume("["):
+      var exp: Node = newNode(NdAdd, node, expr(), tokPrev)                       #! 左辺のnodeには識別子がくる． この左辺はNdLvarとして識別され，アドレス(RBP-offset)をゲットする．(これはロードしない) そのオフセットにexpr()で評価した数値を足すことで， 配列の要素にアクセスできる．
+      expect("]")
+      node = newNode(NdDeref, exp, tokPrev)                                 #! C言語では，配列は，ポインタ経由にアクセスする．
+      continue
+
+    # 構造体アクセス
+    if consume("."):
+      node = newNode(NdMember, node, tokPrev)                 # 左辺に追加しておく
+      node.memberName = expectIdent()                         # アクセス先のメンバー変数名
+      continue
+
+    return node
 
 proc primary(): Node =
   if consume("("):

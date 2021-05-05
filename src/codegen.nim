@@ -29,6 +29,12 @@ proc genAddr(node: Node) =                                #! 左辺値生成（�
   of NdDeref:
     gen(node.lhs)                                         #! *p = 3 のようにデリファレンス経由で値を代入するときに対応するため， pのアドレスが生成されるように左辺値をコンパイル
     return
+  of NdMember:                                            #! 左辺にメンバー入ってる(parserで入れた)
+    genAddr(node.lhs)                                     #! 左辺のアドレス生成(構造体の先頭アドレス)
+    echo "  pop rax"
+    echo fmt"  add rax, {node.member.offset}"             #! 対象メンバ変数のオフセットを足す
+    echo "  push rax"
+    return
   else:
     errorAt("not an lvalue", node.tok)                    #! Token型を渡す設計にすることで， コードジェネレートの際のエラー位置を正確に確認できるようになった（本当か
 
@@ -72,7 +78,7 @@ proc gen(node: Node) =
     gen(node.lhs)
     echo "  add rsp, 8"                                   #! pop raxをする代わり？ スタックポインタを上に8あげればpopしたのと同じ.
     return
-  of NdLvar:                                              #? 変数利用
+  of NdLvar, NdMember:                                              #? 変数利用
     genAddr(node)                                         #! 変数を右辺値として扱う場合は， まず左辺値として評価
     if node.ty.kind != TyArray:                           #! 配列だったら，スタックトップにアドレスを残す．
       load(node.ty)                                              #! スタックトップにある結果をアドレスとみなして，そのアドレスから値をロード

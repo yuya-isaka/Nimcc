@@ -28,7 +28,7 @@ proc isAlnum(c: string): bool =
 proc checkReserved(): (string, bool) =                  #! tupleを返す
 
     # "return", "if", "else"
-    var strList1 = ["return", "if", "else", "while", "for", "int", "sizeof", "char"]    #! arrayになる
+    var strList1 = ["return", "if", "else", "while", "for", "int", "sizeof", "char", "struct"]    #! arrayになる
     for tmp in strList1:
       var tmpStr: string = $input[idx]
       var tmpIdx: int = idx+1
@@ -49,7 +49,7 @@ proc checkReserved(): (string, bool) =                  #! tupleを返す
         return (tmpStr, true)
 
     # こっちを後
-    var strList3 = ['+', '-', '*', '/', '(', ')', '<', '>', ';', '=', '{', '}', ',', '&', '[', ']']
+    var strList3 = ['+', '-', '*', '/', '(', ')', '<', '>', ';', '=', '{', '}', ',', '&', '[', ']', '.']
     for tmp in strList3:
       if input[idx] == tmp:
         return ($input[idx], true)

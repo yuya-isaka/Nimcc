@@ -9,7 +9,6 @@ import strutils
 var idx* = 0
 var input*: seq[char]
 
-
 #? トークン
 type TokenKind* = enum
     TkReserved,           # 記号
@@ -47,11 +46,20 @@ type TypeKind* = enum
     TyPtr,
     TyArray,
     TyChar,
+    TyStruct
 
-type Type* = ref object
+type 
+  Type* = ref object
     kind*: TypeKind       # 型の種類
     base*: Type           # TyPtrの時, 対象変数, ポインタか配列じゃなかったら，ここはnilのはず！！！
     arraySize*: int       # TyArrayで配列のサイズを計算するときに使う
+    members*: Member
+
+  Member* = ref object
+    next*: Member
+    ty*: Type
+    name*: string
+    offset*: int
 
 
 #? 識別子（変数， 配列)->違いはty要素で管理
@@ -93,7 +101,8 @@ type NodeKind* = enum
     NdDeref,                    # pointer *
     NdNull,                     # NULL
     NdSizeof,                    # sizeof 
-    NdStmtExpr
+    NdStmtExpr,
+    NdMember
 
 type Node* = ref object
     kind*: NodeKind             # ノードの種類
@@ -124,6 +133,10 @@ type Node* = ref object
 
     # 型情報
     ty*: Type
+
+    # Struct member access
+    memberName*: string
+    member*: Member
 
 
 #? 関数

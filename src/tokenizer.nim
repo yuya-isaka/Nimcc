@@ -69,6 +69,7 @@ proc getEscapeChar(c: char): char =
   of '0': return char(0)
   else: return c
 
+# 複数行コメントアウトチェック
 proc strstr(): bool =
   while len(input) > idx and len(input) > idx+1:
     var tmpStr = $input[idx] & $input[idx+1]
@@ -78,6 +79,7 @@ proc strstr(): bool =
     inc(idx)
   return false
 
+# コメントアウトチェック（末尾に\nを含まないとダメでダサい．いつか改良する）
 proc checkComment(): bool =
   var tmpStr = $input[idx]
   if len(input) > idx + 1:

@@ -188,7 +188,7 @@ proc primary(): Node
 proc structDecl(): Type
 
 #? basetype = ("char" | int" | struct-decl) "*"*
-proc basetype(): Type =                                                 
+proc basetype(): Type =                                                   #? 識別子はここで型付け
   if not isTypeName():
     errorAt("typename expected", token)
 
@@ -538,7 +538,7 @@ proc unary(): Node =
   return postFix()
 
 proc postFix(): Node =
-  var node: Node = primary()                                                    # 配列だったらこのnodeの型がTyArrayになってる
+  var node: Node = primary()                                                    # 配列だったらこのnodeの型がTyArrayになってる, 構造体だったらTyStrになってる？
 
   while true:
     # 配列アクセス
@@ -558,9 +558,9 @@ proc postFix(): Node =
 
 proc primary(): Node =
   if consume("("):
-    if consume("{"):
+    if consume("{"):                                                            #? 文の式
       return stmtExpr()
-    var node: Node = expr()                                                     # 再帰的に使う
+    var node: Node = expr()                                                     # 丸括弧の中は式
     expect(")")
     return node
 
@@ -578,7 +578,7 @@ proc primary(): Node =
       return node
 
     #? 変数
-    var tmpLvar: (Lvar, bool) = findLvar(tok[0])                                        # Lvar, bool
+    var tmpLvar: (Lvar, bool) = findLvar(tok[0])                                        #? 変数は既に前方宣言されていて，localsに登録されているはず
     if not tmpLvar[1]:
                                                                           # tmpLvar[0] = pushLvar(tok[0].str)  # 昔はここで変数をlocalsに追加してた．　今は上の方でintを見つけた瞬間に格納している．
       errorAt("undefined variable", tok[0])                               #! ここで見たことない変数が来るのはおかしいからエラー

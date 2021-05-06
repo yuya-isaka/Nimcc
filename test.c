@@ -227,6 +227,9 @@ int main() {
   assert(2, ({ struct {char a; char b;} x; sizeof(x); }), "struct {char a; char b;} x; sizeof(x);");
   assert(9, ({ struct {char a; int b;} x; sizeof(x); }), "struct {char a; int b;} x; sizeof(x);");
 
+  // check error \n
+  // assert(6, ({ struct { struct { int b; } a; } x; x.a.b=6; x.a.c; }), "struct { struct { int b; } a; } x; x.a.b=6; x.a.b;"); \n
+
   printf("OK\n");
   return 0;
 }

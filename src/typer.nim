@@ -47,15 +47,15 @@ proc sizeType*(ty: Type): int =                         # これよく書き間�
     return sizeType(ty.base) * ty.arraySize
   else:
     assert(ty.kind == TyStruct)
-    var mem = ty.members
+    var mem = ty.members                              #? ty.membersはここでも使う（メンバー変数のスタックを確保(オフセットを計算））
     while mem.next != nil:
       mem = mem.next
     return mem.offset + sizeType(mem.ty)              # メンバー変数最後尾にアクセスするためのオフセットに，メンバー最後尾のオフセットを足す
 
 #? メンバー変数持ってるか確認
 proc findMember(ty: Type, name: string): Member =     # メンバー変数探し
-  assert(ty.kind == TyStruct)
-  var mem = ty.members
+  assert(ty.kind == TyStruct)                         
+  var mem = ty.members                                #? ty.membersはここで使う（メンバー変数に含まれているか）
   while mem != nil:
     if mem.name == name:
       return mem
@@ -136,7 +136,7 @@ proc visit(node: Node) =
       errorAt("not a struct", node.tok)
     node.member = findMember(node.lhs.ty, node.memberName)        #? 構造体が存在しているか確認　＆　node.memberに追加
     if node.member == nil:
-      errorAt("specified member does not exist", node.tok)
+      errorAt("specified member does not exist", node.tok)        #! 探しているメンバー変数を，構造体が持ってなかったらエラーーー
     node.ty = node.member.ty                                      #? Nodeの型を構造体メンバーに合わせる
     return
   else:

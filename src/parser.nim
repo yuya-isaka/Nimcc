@@ -321,7 +321,7 @@ proc structDecl(): Type =
   head.next = nil
   var cur = head
 
-  while not consume("}"):                            # 構造体の中身を読む
+  while not consume("}"):                            # 構造体の中身を読む(ループ)
     cur.next = structMember()
     cur = cur.next
 
@@ -538,7 +538,7 @@ proc unary(): Node =
   return postFix()
 
 proc postFix(): Node =
-  var node: Node = primary()                                                    # 配列だったらこのnodeの型がTyArrayになってる, 構造体だったらTyStrになってる？
+  var node: Node = primary()                                                    # 配列だったらこのnodeの型がTyArrayになってる, 構造体だったらTyStrになってる
 
   while true:
     # 配列アクセス
@@ -550,7 +550,7 @@ proc postFix(): Node =
 
     # 構造体アクセス
     if consume("."):
-      node = newNode(NdMember, node, tokPrev)                 # 左辺に追加しておく
+      node = newNode(NdMember, node, tokPrev)                 #? 左辺に追加しておく   NdMemberはアクセスするときに使う（逆にTyMemberは，メンバ変数の確認や，メンバ変数のオフセット計算に使われる）
       node.memberName = expectIdent()                         # アクセス先のメンバー変数名
       continue
 

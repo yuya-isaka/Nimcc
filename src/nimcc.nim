@@ -13,8 +13,8 @@ import codegen
 import tokenizer
 
 # 無理矢理オフセット（スタックサイズ）を8の倍数にする.  (今までは全部8バイトだったが，Char型が1バイトになったため，全体のstacksizeが8の倍数じゃない可能性がある)
-proc alignTo(n: int, align: int): int =
-  return (n + align - 1) and not (align - 1)
+# proc alignTo(n: int, align: int): int =
+#   return (n + align - 1) and not (align - 1)
 
 proc readFile(): void =
   if paramCount() != 1:

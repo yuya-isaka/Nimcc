@@ -10,28 +10,32 @@
 
 import header
 
-proc newType(kind: TypeKind): Type =
+proc alignTo*(offset: int, align: int): int =
+  return (offset + align - 1) and (not (align - 1))
+
+proc newType(kind: TypeKind, align: int): Type =
   var ty = new Type
   ty.kind = kind
+  ty.align = align
   return ty
 
 #? int型生成
 proc intType*(): Type =
-  return newType(TyInt)
+  return newType(TyInt, 8)
 
 #? char型生成
 proc charType*(): Type =
-  return newType(TyChar)
+  return newType(TyChar, 1)
 
 #? Ptr型生成(baseとなる型を受け取る)
 proc pointerType*(base: Type): Type =
-  var ty = newType(TyPtr)
+  var ty = newType(TyPtr, 8)
   ty.base = base
   return ty
 
 #? Array型生成(baseとなる型とサイズを受け取る)
 proc arrayType*(base: Type, size: int): Type =
-  var ty = newType(TyArray)
+  var ty = newType(TyArray, base.align)
   ty.base = base
   ty.arraySize = size
   return ty
@@ -50,7 +54,8 @@ proc sizeType*(ty: Type): int =                         # これよく書き間�
     var mem = ty.members                              #? ty.membersはここでも使う（メンバー変数のスタックを確保(オフセットを計算））
     while mem.next != nil:
       mem = mem.next
-    return mem.offset + sizeType(mem.ty)              # メンバー変数最後尾にアクセスするためのオフセットに，メンバー最後尾のオフセットを足す
+    var memEnd: int = mem.offset + sizeType(mem.ty)   #? メンバー変数最後尾にアクセスするためのオフセットに，メンバー最後尾のオフセットを足す sizeofってよく間違えるねん
+    return alignTo(memEnd, ty.align)                  # オフセットをアライメント
 
 #? メンバー変数持ってるか確認
 proc findMember(ty: Type, name: string): Member =     # メンバー変数探し
@@ -90,45 +95,45 @@ proc visit(node: Node) =
     node.ty = intType()
     return
   of NdAdd:
-    if node.rhs.ty.base != nil:                                   #! 右辺がポインタ.....3 + ptrみたいな式はあり得るOK -> 入れ替えて確認
+    if node.rhs.ty.base != nil:                                   #? 右辺がポインタ.....3 + ptrみたいな式はあり得るOK -> 入れ替えて確認
       var tmp = node.lhs
       node.lhs = node.rhs
       node.rhs = tmp
-    if node.rhs.ty.base != nil:                                   #! また右辺がポインタ.....ptr + ptr という式はない
+    if node.rhs.ty.base != nil:                                   #? また右辺がポインタ.....ptr + ptr という式はない
       errorAt("invalid pointer arithmetic operands", node.tok)
-    node.ty = node.lhs.ty                                         #! 右辺値がTyPtrだったらlhsとrhsを交換してるから自動的に，　右辺値がポインタなら右辺値の型，　右辺値が数値なら左辺値の型を入れる
-                                                                  #! 加算はlhsとrhsが入れ替わっても問題ない(依存してない)
+    node.ty = node.lhs.ty                                         #? 右辺値がTyPtrだったらlhsとrhsを交換してるから自動的に，　右辺値がポインタなら右辺値の型，　右辺値が数値なら左辺値の型を入れる
+                                                                  #? 加算はlhsとrhsが入れ替わっても問題ない(依存してない)
     return
   of NdSub:
-    if node.rhs.ty.base != nil:                                   #! 右辺値がポインタ．．．．．．．3 - ptr みたいな式は存在しない
+    if node.rhs.ty.base != nil:                                   #? 右辺値がポインタ．．．．．．．3 - ptr みたいな式は存在しない
       errorAt("invalid pointer arithmetic operands", node.tok)
-    node.ty = node.lhs.ty                                         #! 評価結果の型は，左辺の型に依存
+    node.ty = node.lhs.ty                                         #? 評価結果の型は，左辺の型に依存
     return
   of NdAssign:
-    node.ty = node.lhs.ty                                         #! 代入は「代入する値の型」に依存する！！！！
+    node.ty = node.lhs.ty                                         #? 代入は「代入する値の型」に依存する！！！！
     return
   of NdAddr:
     if node.lhs.ty.kind == TyArray:                               # 配列のポインタ
-      node.ty = pointerType(node.lhs.ty.base)                     #! 配列は既にbaseを持っている．のでbaseをbaseとしたポインタ型を返す
+      node.ty = pointerType(node.lhs.ty.base)                     #? 配列は既にbaseを持っている．のでbaseをbaseとしたポインタ型を返す
     else:
-      node.ty = pointerType(node.lhs.ty)                          #! node.lhs.ty(代入する値の型）をbase(依存)としたポインタ型を返す
+      node.ty = pointerType(node.lhs.ty)                          #? node.lhs.ty(代入する値の型）をbase(依存)としたポインタ型を返す
     return
   of NdDeref:
     if node.lhs.ty.base == nil:                                   # お前はデリファレンスできねえ！
       errorAt("invalid pointer dereference", node.tok)
-    node.ty = node.lhs.ty.base                                    #! このノードは，baseの型に依存する
+    node.ty = node.lhs.ty.base                                    #? このノードは，baseの型に依存する
     return
   of NdLvar:
-    node.ty = node.lvar.ty                                        #! 変数ノードは，変数の型に依存する！！
-    return                                                        #! ノードごとにそれぞれ値を持っている．その値が何の型なのか決めているのか
+    node.ty = node.lvar.ty                                        #? 変数ノードは，変数の型に依存する！！
+    return                                                        #? ノードごとにそれぞれ値を持っている．その値が何の型なのか決めているのか
   of NdSizeof:
     node.kind = NdNum
-    node.ty = intType()                                           #! 整数で埋め込む
-    node.val = sizeType(node.lhs.ty)                              #! ここの型走査で，sizeofは計算してしまって，整数で埋め込んでおく．
-    node.lhs = nil                                                #! 左辺の型を調べたら，ここは不要になる
+    node.ty = intType()                                           #? 整数で埋め込む
+    node.val = sizeType(node.lhs.ty)                              #? ここの型走査で，sizeTypeは計算してしまって，整数で埋め込んでおく．
+    node.lhs = nil                                                #? 左辺の型を調べたら，ここは不要になる なんでnilにする必要あるの？
     return
   of NdStmtExpr:
-    var last = node.body[high(node.body)]                          #! body配列の最後の要素の型を設定(途中でretunするときどうなる？)
+    var last = node.body[high(node.body)]                         #? body配列の最後の要素の型を設定(途中でretunするときどうなる？)
     node.ty = last.ty
     return
   of NdMember:                                                    #? 構造体メンバーへのアクセスがあった時(左辺に構造体メンバーが入ってる)
@@ -136,7 +141,7 @@ proc visit(node: Node) =
       errorAt("not a struct", node.tok)
     node.member = findMember(node.lhs.ty, node.memberName)        #? 構造体が存在しているか確認　＆　node.memberに追加
     if node.member == nil:
-      errorAt("specified member does not exist", node.tok)        #! 探しているメンバー変数を，構造体が持ってなかったらエラーーー
+      errorAt("specified member does not exist", node.tok)        #? 探しているメンバー変数を，構造体が持ってなかったらエラーーー
     node.ty = node.member.ty                                      #? Nodeの型を構造体メンバーに合わせる
     return
   else:

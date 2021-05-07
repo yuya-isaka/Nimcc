@@ -54,6 +54,7 @@ type
     base*: Type           # TyPtrの時, 対象変数, ポインタか配列じゃなかったら，ここはnilのはず！！！
     arraySize*: int       # TyArrayで配列のサイズを計算するときに使う
     members*: Member
+    align*: int           # alignment
 
   Member* = ref object
     next*: Member

@@ -183,7 +183,7 @@ proc unary(): Node
 proc postFix(): Node
 proc primary(): Node
 
-#! 補助関数----------------------------------------------------------------------------------------------------------------------------
+#? 補助関数----------------------------------------------------------------------------------------------------------------------------
 
 proc structDecl(): Type
 
@@ -196,7 +196,7 @@ proc basetype(): Type =                                                   #? 識
   if consume("char"):
     ty = charType()
   elif consume("int"):
-    ty = intType()                                                      #! 現状char以外はint
+    ty = intType()                                                      #? 現状char以外はint
   else:
     ty = structDecl()
 
@@ -332,8 +332,12 @@ proc structDecl(): Type =
   var offset = 0
   var mem = ty.members
   while mem != nil:
+    offset = alignTo(offset, mem.ty.align)
     mem.offset = offset                             # それぞれのメンバー変数のオフセット計算
     offset += sizeType(mem.ty)
+
+    if ty.align < mem.ty.align:
+      ty.align = mem.ty.align
     mem = mem.next
   
   return ty

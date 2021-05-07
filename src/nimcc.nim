@@ -51,7 +51,7 @@ proc main() =
       offset += sizeType(vl.lvar.ty)    # 対象識別子(変数)の型で，offsetは変わる(intとptrは「8」, arrayは「type*size」)
       vl.lvar.offset = offset
       vl = vl.next
-    fn.stackSize = alignTo(offset, 8)
+    fn.stackSize = alignTo(offset, 8)   # 全体のスタックサイズが8の倍数になってないとだめ．->アライメント
     fn = fn.next
 
   #? アセンブリ生成

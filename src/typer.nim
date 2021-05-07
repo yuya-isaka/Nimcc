@@ -55,7 +55,7 @@ proc sizeType*(ty: Type): int =                         # これよく書き間�
     while mem.next != nil:
       mem = mem.next
     var memEnd: int = mem.offset + sizeType(mem.ty)   #? メンバー変数最後尾にアクセスするためのオフセットに，メンバー最後尾のオフセットを足す sizeofってよく間違えるねん
-    return alignTo(memEnd, ty.align)                  # オフセットをアライメント
+    return alignTo(memEnd, ty.align)                  # 構造体のメンバ変数は，横並びでメモリに配置されるから，アライメントが必要
 
 #? メンバー変数持ってるか確認
 proc findMember(ty: Type, name: string): Member =     # メンバー変数探し
@@ -126,9 +126,9 @@ proc visit(node: Node) =
   of NdLvar:
     node.ty = node.lvar.ty                                        #? 変数ノードは，変数の型に依存する！！
     return                                                        #? ノードごとにそれぞれ値を持っている．その値が何の型なのか決めているのか
-  of NdSizeof:
-    node.kind = NdNum
-    node.ty = intType()                                           #? 整数で埋め込む
+  of NdSizeof:                              
+    node.kind = NdNum                                             #? NdSizeofは型走査の時に，intに変換してまう
+    node.ty = intType()                                           
     node.val = sizeType(node.lhs.ty)                              #? ここの型走査で，sizeTypeは計算してしまって，整数で埋め込んでおく．
     node.lhs = nil                                                #? 左辺の型を調べたら，ここは不要になる なんでnilにする必要あるの？
     return

@@ -332,8 +332,8 @@ proc structDecl(): Type =
   var offset = 0
   var mem = ty.members
   while mem != nil:
-    offset = alignTo(offset, mem.ty.align)          # オフセットの計算ではアライメントを噛ませる　アライメントの数は，型ごとに決まっている．（intは4?8?, charは1）
-    mem.offset = offset                             # それぞれのメンバー変数のオフセット計算
+    offset = alignTo(offset, mem.ty.align)          # オフセットの計算ではアライメントを噛ませる　アライメントの数は，型ごとに決まっている．64ビットアーキテクチャでは，
+    mem.offset = offset                             # 先頭アドレスが8の倍数になるように設定すると， 1ワードに収まり，無駄なメモリアクセスが減る -> ８バイト境界にアライン(整列，位置合わせ)
     offset += sizeType(mem.ty)
 
     if ty.align < mem.ty.align:                     # 構造体全体のアライメントは大きい方に合わせる（charだけなら1のまま，int,ptrが入ると8になる）

@@ -238,6 +238,17 @@ int main() {
   // ローカル変数もアライメント \n
   assert(15, ({ int x; char y; int a=&x; int b=&y; b-a; }), "int x; char y; int a=&x; int b=&y; b-a;");
   assert(1, ({ char x; int y; int a=&x; int b=&y; b-a; }), "char x; int y; int a=&x; int b=&y; b-a;");
+  assert(1, ({ char x; char y; int a=&x; int b=&y; b-a; }), "char x; int y; int a=&x; int b=&y; b-a;");
+  assert(8, ({ int x; int y; int a=&x; int b=&y; b-a; }), "char x; int y; int a=&x; int b=&y; b-a;");
+  assert(23, ({ int x; int y; char z; int a=&x; int b=&y; int c=&z; c-a; }), "char x; int y; int a=&x; int b=&y; b-a;");
+  assert(15, ({ int x; int y; char z; int a=&x; int b=&y; int c=&z; c-b; }), "char x; int y; int a=&x; int b=&y; b-a;");
+  assert(8, ({ int x; int y; char z; int a=&x; int b=&y; int c=&z; b-a; }), "char x; int y; int a=&x; int b=&y; b-a;");
+
+  assert(24, ({ int x; int y; char z; int g; int a=&x; int b=&y; int c=&z; int d=&g; d-a; }), "char x; int y; int a=&x; int b=&y; b-a;");
+  assert(23, ({ int x; int y; char z; char g; int a=&x; int b=&y; int c=&z; int d=&g; d-a; }), "char x; int y; int a=&x; int b=&y; b-a;");
+
+  assert(16, ({ int x; int y; int z; int a=&x; int b=&y; int c=&z; c-a; }), "char x; int y; int a=&x; int b=&y; b-a;");
+  // assert(16, ({ int x; char y; int a=&x; int b=&y; b; }), "int x; char y; int a=&x; int b=&y; b-a;"); -> 変な数字（アドレス）になる \n
 
   printf("OK\n");
   return 0;

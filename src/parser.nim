@@ -265,7 +265,7 @@ proc stmtExpr(): Node =
     node.body.add(cur)                                                    #! 配列にしてみた．
   expect(")")
 
-  scope = sc                                                             # scope書き戻し     
+  scope = sc                                                          # scopeが終わったら，新しく追加した変数リストは破棄する． -> scで書き戻し
 
   if cur.kind != NdExprStmt:                                                
     errorAt("stmt expr returning void is not supported", cur.tok)
@@ -458,7 +458,7 @@ proc stmt(): Node =
     var sc: LvarList = scope                                                      # 現状のscope記憶
     while not consume("}"):                                             #! ruiさんのとは違う実装だよー気をつけてなー未来の自分〜
       node.body.add(stmt())                                             #! 配列にしてみた．
-    scope = sc                                                          # scope書き戻し
+    scope = sc                                                          # scopeが終わったら，新しく追加した変数リストは破棄する． -> scで書き戻し
     return node
 
   if isTypeName():                                                      #! 型名かチラ見！！！ （intかchar)

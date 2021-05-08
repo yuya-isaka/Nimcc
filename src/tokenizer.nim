@@ -25,10 +25,10 @@ proc isAlnum(c: string): bool =
   return isAlpha(c) or ("0" <= c and c <= "9")
 
 # 予約語をチェック
-proc checkReserved(): (string, bool) =                  #! tupleを返す
+proc checkReserved(): (string, bool) =                  # tupleを返す
 
     # "return", "if", "else"
-    var strList1 = ["return", "if", "else", "while", "for", "int", "sizeof", "char", "struct"]    #! arrayになる
+    var strList1 = ["return", "if", "else", "while", "for", "int", "sizeof", "char", "struct"]    # arrayになる
     for tmp in strList1:
       var tmpStr: string = $input[idx]
       var tmpIdx: int = idx+1
@@ -36,7 +36,7 @@ proc checkReserved(): (string, bool) =                  #! tupleを返す
         if len(input) > tmpIdx:
           tmpStr.add($input[tmpIdx])
           inc(tmpIdx)
-      if tmpStr == tmp and not isAlnum($input[tmpIdx]):               #! returnxとかifxとかの記述を禁止する
+      if tmpStr == tmp and not isAlnum($input[tmpIdx]):               # returnxとかifxとかの記述を禁止する
         return (tmpStr, true)
 
     # こっちを先
@@ -92,7 +92,7 @@ proc checkComment(): bool =
     var tmpChar: char
     while tmpChar != '\n':
       if input[idx] == '\\':
-        tmpChar = getEscapeChar(input[idx+1])                   #! 無理矢理 \n を改行に入れて対応
+        tmpChar = getEscapeChar(input[idx+1])                   # 無理矢理 \n を改行に入れて対応
       inc(idx)
     inc(idx)
     return true
@@ -144,7 +144,7 @@ proc tokenize*(): Token =
       continue
 
     #? 予約語(こいつは先に)
-    var tmpStr = checkReserved()                 #! TkReservedに関するトークン作成はこの関数で!
+    var tmpStr = checkReserved()                 # TkReservedに関するトークン作成はこの関数で!
     if tmpStr[1]:
       cur = newToken(TkReserved, cur, tmpStr[0])
       idx += len(tmpStr[0])                         # 読んだ文字列文インデックスを進める
@@ -164,7 +164,7 @@ proc tokenize*(): Token =
         else:
           tmpStr.add(input[idx])
         inc(idx)
-      tmpStr.add("\0")                                #? null terminate
+      tmpStr.add("\0")                                # null terminate
       cur = newToken(TkStr, cur, tmpStr)
       inc(idx)
       continue
@@ -178,7 +178,7 @@ proc tokenize*(): Token =
     #     inc(idx)
     #     if len(input) <= idx:
     #       errorAt("unclosed string literal", token)
-    #   # tmpStr.add("\0")                                #? null terminate
+    #   # tmpStr.add("\0")                                # null terminate
     #   cur = newToken(TkStr, cur, tmpStr)
     #   inc(idx)
     #   continue

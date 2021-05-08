@@ -22,7 +22,7 @@ proc readFile(): void =
   block:
     var f: File = open(commandLineParams()[0], FileMode.fmRead)
     defer: close(f)
-    # echo type(commandLineParams()[0])                                     #! TaintedString -> ユーザ入力の文字列はこの型になる -> ユーザ入力の検証を忘れないようにねってのある
+    # echo type(commandLineParams()[0])                                     # TaintedString -> ユーザ入力の文字列はこの型になる -> ユーザ入力の検証を忘れないようにねってのある
     while not f.endOfFile:
       input.add(f.readLine)
   # for i in commandLineParams()[0]:

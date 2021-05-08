@@ -188,7 +188,7 @@ proc primary(): Node
 proc structDecl(): Type
 
 #? basetype = ("char" | int" | struct-decl) "*"*
-proc basetype(): Type =                                                   #? 識別子はここで型付け
+proc basetype(): Type =                                                   # 識別子はここで型付け
   if not isTypeName():
     errorAt("typename expected", token)
 
@@ -196,7 +196,7 @@ proc basetype(): Type =                                                   #? 識
   if consume("char"):
     ty = charType()
   elif consume("int"):
-    ty = intType()                                                      #? 現状char以外はint
+    ty = intType()                                                      # 現状char以外はint
   else:
     ty = structDecl()
 
@@ -209,7 +209,7 @@ proc readTypeSuffix(base: var Type): Type =
     return base
   var size: int = expectNumber()
   expect("]")
-  base = readTypeSuffix(base)                                           #! int a[3][3] のような多次元配列に対応（再帰）
+  base = readTypeSuffix(base)                                           # int a[3][3] のような多次元配列に対応（再帰）
   return arrayType(base, size)
 
 #? 関数の引数を読む！！
@@ -242,7 +242,7 @@ proc isFunction(): bool =
   discard basetype()
   var tmp: (Token, bool) = consumeIdent()
   var isFunc: bool = tmp[1] and consume("(")
-  token = tok                                                         #! トークン元に戻す（関数かどうか事前にチェックするだけで， tokenは進めない）
+  token = tok                                                         # トークン元に戻す（関数かどうか事前にチェックするだけで， tokenは進めない）
   return isFunc
 
 proc globalLvar() =
@@ -258,11 +258,11 @@ proc readExprStmt(): Node =
 
 proc stmtExpr(): Node =
   var sc: LvarList = scope                                              # 現状のscope
-  var node: Node = newNode(NdStmtExpr, tokPrev)                               #! NdBlockと違って最後の値を返す！！！！！(途中にreturnがあればそれを返す) -> 式だから
+  var node: Node = newNode(NdStmtExpr, tokPrev)                               # NdBlockと違って最後の値を返す！！！！！(途中にreturnがあればそれを返す) -> 式だから
   var cur: Node = new Node
-  while not consume("}"):                                             #! ruiさんのとは違う実装だよー気をつけてなー未来の自分〜
+  while not consume("}"):                                             # ruiさんのとは違う実装だよー気をつけてなー未来の自分〜
     cur = stmt()
-    node.body.add(cur)                                                    #! 配列にしてみた．
+    node.body.add(cur)                                                    # 配列にしてみた．
   expect(")")
 
   scope = sc                                                          # scopeが終わったら，新しく追加した変数リストは破棄する． -> scで書き戻し
@@ -270,7 +270,7 @@ proc stmtExpr(): Node =
   if cur.kind != NdExprStmt:                                                
     errorAt("stmt expr returning void is not supported", cur.tok)
   # cur = cur.lhs
-  node.body[high(node.body)] = cur.lhs                                    #! 最後は左辺を入力することで, NdExprStmtから抜ける（add rsp, 8)をしないようにする
+  node.body[high(node.body)] = cur.lhs                                    # 最後は左辺を入力することで, NdExprStmtから抜ける（add rsp, 8)をしないようにする
   return node
 
 #? funcArgs =  "(" (assign ("," assign)*)? ")"      関数の引数を評価し返す -> node.argsで持つ
@@ -284,24 +284,24 @@ proc funcArgs(): Node =
     cur.next = expr()
     cur = cur.next
   expect(")")
-  return head                                                             #! 評価結果をNodeの連結リストで返す．
+  return head                                                           # 評価結果をNodeの連結リストで返す．
 
 proc declaration(): Node =
   var tok: Token = token
   var ty: Type = basetype()
   var name: string = expectIdent()
-  ty = readTypeSuffix(ty)                                               #! 配列の可能性を考慮
-  var lvar: Lvar = pushLvar(name, ty, true)                                   #! 型付けされたローカル変数をlocalsに追加〜〜〜
+  ty = readTypeSuffix(ty)                                               # 配列の可能性を考慮
+  var lvar: Lvar = pushLvar(name, ty, true)                             # 型付けされたローカル変数をlocalsに追加〜〜〜
 
-  if consume(";"):                                                      #! 初期化されてない変数宣言
+  if consume(";"):                                                      # 初期化されてない変数宣言
     return newNode(NdNull, tokPrev)
 
   expect("=")
   var lhs: Node = newNode(lvar, tok)                                    # 変数生成
   var rhs: Node = expr()
   expect(";")
-  var node: Node = newNode(NdAssign, lhs, rhs, tok)                     #! 代入処理，　int a = 3;
-  return newNode(NdExprStmt, node, tok)                                 #! 代入では評価結果をスタックに残す必要はない, 式の文
+  var node: Node = newNode(NdAssign, lhs, rhs, tok)                     # 代入処理，　int a = 3;
+  return newNode(NdExprStmt, node, tok)                                 # 代入では評価結果をスタックに残す必要はない, 式の文
 
 #? 構造体メンバー作成
 proc structMember(): Member =
@@ -342,7 +342,7 @@ proc structDecl(): Type =
   
   return ty
 
-#! マッピングされた関数(再帰下降構文解析----------------------------------------------------------------------------------------------------------------------------
+# マッピングされた関数(再帰下降構文解析----------------------------------------------------------------------------------------------------------------------------
 
 #? program = (function | global-lvar)*
 #? function = basetype ident "(" params? ")" "{" stmt* "}"
@@ -421,11 +421,11 @@ proc stmt(): Node =
     return node
 
   if consume("if"):
-    var node: Node = newNode(NdIf, tokPrev)                                   # 左辺にノードを作るわけじゃないからnewNode(NdIf, expr())としない
+    var node: Node = newNode(NdIf, tokPrev)                             # 左辺にノードを作るわけじゃないからnewNode(NdIf, expr())としない
     expect("(")
-    node.cond = expr()                                                  #! Expression
+    node.cond = expr()                                                  # Expression
     expect(")")
-    node.then = stmt()                                                  #! !ifの中でifを使ってもいい, statement
+    node.then = stmt()                                                  # ifの中でifを使ってもいい, statement
     if consume("else"):
       node.els = stmt()
     return node
@@ -433,39 +433,39 @@ proc stmt(): Node =
   if consume("while"):
     var node: Node = newNode(NdWhile, tokPrev)
     expect("(")
-    node.cond = expr()                                                  #! node.condのexpression(式）の評価結果はcodegen内で，pop raxする予定があるから，readExprStmtでラップするのはだめ!!!!!!
+    node.cond = expr()                                                  # node.condのexpression(式）の評価結果はcodegen内で，pop raxする予定があるから，readExprStmtでラップするのはだめ!!!!!!
     expect(")")
-    node.then = stmt()                                                  #! statement
+    node.then = stmt()                                                  # statement
     return node
 
   if consume("for"):
     var node: Node = newNode(NdFor, tokPrev)
     expect("(")
     if not consume(";"):
-      node.init = readExprStmt()                                        # !readExprStmtでラップしないと，スタックに評価結果が残ってしまう, 式の文！
+      node.init = readExprStmt()                                        # readExprStmtでラップしないと，スタックに評価結果が残ってしまう, 式の文！
       expect(";")
     if not consume(";"):
-      node.cond = expr()                                                #! node.condはcodegen内で，pop raxする予定があるから，readExprStmtでラップするのはだめ!!!!!!
+      node.cond = expr()                                                # node.condはcodegen内で，pop raxする予定があるから，readExprStmtでラップするのはだめ!!!!!!
       expect(";")
     if not consume(")"):
       node.inc = readExprStmt()
       expect(")")
-    node.then = stmt()                                                  #! このforでは，　ここのstatement（文)を返す．
+    node.then = stmt()                                                  # このforでは，　ここのstatement（文)を返す．
     return node
 
-  if consume("{"):                                                      #! NdStmtExprと違って，値を返さない（文）
+  if consume("{"):                                                      # NdStmtExprと違って，値を返さない（文）
     var node: Node = newNode(NdBlock, tokPrev)
     var sc: LvarList = scope                                                      # 現状のscope記憶
-    while not consume("}"):                                             #! ruiさんのとは違う実装だよー気をつけてなー未来の自分〜
-      node.body.add(stmt())                                             #! 配列にしてみた．
+    while not consume("}"):                                             # ruiさんのとは違う実装だよー気をつけてなー未来の自分〜
+      node.body.add(stmt())                                             # 配列にしてみた．
     scope = sc                                                          # scopeが終わったら，新しく追加した変数リストは破棄する． -> scで書き戻し
     return node
 
-  if isTypeName():                                                      #! 型名かチラ見！！！ （intかchar)
-    return declaration()                                                #! intなら変数として格納!!!!
+  if isTypeName():                                                      # 型名かチラ見！！！ （intかchar)
+    return declaration()                                                # intなら変数として格納!!!!
 
-  var node: Node = readExprStmt()                                             #! 式の文(a=3; とかとか)
-  expect(";")                                                           #! 式にセミコロンがつくと文になる．
+  var node: Node = readExprStmt()                                       # 式の文(a=3; とかとか)
+  expect(";")                                                           # 式にセミコロンがつくと文になる．
   return node
 
 proc expr(): Node =
@@ -475,7 +475,7 @@ proc assign(): Node =
   var node: Node = equality()
 
   if consume("="):
-    node = newNode(NdAssign, node, assign(), tokPrev)                   #! a=b=3とかしたいから，ここは右辺はasign()
+    node = newNode(NdAssign, node, assign(), tokPrev)                   # a=b=3とかしたいから，ここは右辺はasign()
   return node
 
 proc equality(): Node =
@@ -531,7 +531,7 @@ proc unary(): Node =
     return unary()                                                        # これ忘れてた．．++とかもそりゃいいよね
 
   if consume("-"):
-    return newNode(NdSub, newNode(0, tokPrev), unary(), tokPrev)          #! -- や -+ などを許すために，ここはunary
+    return newNode(NdSub, newNode(0, tokPrev), unary(), tokPrev)          # -- や -+ などを許すために，ここはunary
 
   if consume("&"):
     return newNode(NdAddr, unary(), tokPrev)
@@ -547,14 +547,14 @@ proc postFix(): Node =
   while true:
     # 配列アクセス
     if consume("["):
-      var exp: Node = newNode(NdAdd, node, expr(), tokPrev)                       #! 左辺のnodeには識別子がくる． この左辺はNdLvarとして識別され，アドレス(RBP-offset)をゲットする．(これはロードしない) そのオフセットにexpr()で評価した数値を足すことで， 配列の要素にアクセスできる．
+      var exp: Node = newNode(NdAdd, node, expr(), tokPrev)                       # 左辺のnodeには識別子がくる． この左辺はNdLvarとして識別され，アドレス(RBP-offset)をゲットする．(これはロードしない) そのオフセットにexpr()で評価した数値を足すことで， 配列の要素にアクセスできる．
       expect("]")
-      node = newNode(NdDeref, exp, tokPrev)                                 #! C言語では，配列は，ポインタ経由にアクセスする．
+      node = newNode(NdDeref, exp, tokPrev)                                 # C言語では，配列は，ポインタ経由にアクセスする．
       continue
 
     # 構造体アクセス
     if consume("."):
-      node = newNode(NdMember, node, tokPrev)                 #? 左辺に追加しておく   NdMemberはアクセスするときに使う（逆にTyMemberは，メンバ変数の確認や，メンバ変数のオフセット計算に使われる）
+      node = newNode(NdMember, node, tokPrev)                 # 左辺に追加しておく   NdMemberはアクセスするときに使う（逆にTyMemberは，メンバ変数の確認や，メンバ変数のオフセット計算に使われる）
       node.memberName = expectIdent()                         # アクセス先のメンバー変数名
       continue
 
@@ -562,7 +562,7 @@ proc postFix(): Node =
 
 proc primary(): Node =
   if consume("("):
-    if consume("{"):                                                            #? 文の式
+    if consume("{"):                                                            # 文の式
       return stmtExpr()
     var node: Node = expr()                                                     # 丸括弧の中は式
     expect(")")
@@ -575,23 +575,23 @@ proc primary(): Node =
   if tok[1]:
 
     #? 関数
-    if consume("("):                                                      #! 「見知らぬ名前と，(」が続いていたら，それは関数と判定し，引数を評価して返す
+    if consume("("):                                                      # 「見知らぬ名前と，(」が続いていたら，それは関数と判定し，引数を評価して返す
       var node: Node = newNode(NdFuncall, tokPrev)
       node.funcname = tok[0].str
       node.args = funcArgs()
       return node
 
     #? 変数
-    var tmpLvar: (Lvar, bool) = findLvar(tok[0])                                        #? 変数は既に前方宣言されていて，localsに登録されているはず
+    var tmpLvar: (Lvar, bool) = findLvar(tok[0])                                        # 変数は既に前方宣言されていて，localsに登録されているはず
     if not tmpLvar[1]:
                                                                           # tmpLvar[0] = pushLvar(tok[0].str)  # 昔はここで変数をlocalsに追加してた．　今は上の方でintを見つけた瞬間に格納している．
-      errorAt("undefined variable", tok[0])                               #! ここで見たことない変数が来るのはおかしいからエラー
-    return newNode(tmpLvar[0], tokPrev)                                   #! 変数生成
+      errorAt("undefined variable", tok[0])                               # ここで見たことない変数が来るのはおかしいからエラー
+    return newNode(tmpLvar[0], tokPrev)                                   # 変数生成
     
   #? 文字列リテラル
   var tmpTok: Token = token
   if consumeStr():
-    var ty: Type = arrayType(charType(), tmpTok.stringLiteral.len)                        #! 文字列リテラルはChar型の配列,  null終端分の文字列を+1で追加
+    var ty: Type = arrayType(charType(), tmpTok.stringLiteral.len)                        # 文字列リテラルはChar型の配列,  null終端分の文字列を+1で追加
     var lvar: Lvar = pushLvar(fmt".L.data.{cnt}", ty, false)
     inc(cnt)
     lvar.stringLiteral = tmpTok.stringLiteral

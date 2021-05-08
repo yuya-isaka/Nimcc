@@ -167,7 +167,7 @@ proc gen(node: Node) =
 
     var label = labelSeq
     inc(labelSeq)
-    echo "  mov rax, rsp"                                 #! 関数呼び出しの前にRSPは16の倍数じゃないとダメ！
+    echo "  mov rax, rsp"                                 #! 関数呼び出しの前にRSPは16の倍数じゃないとダメ！ -> スタックフレームが16バイト境界にアラインされてないといけないx86-64のABIがある．
     echo "  and rax, 15"                                  #! 関数を呼ぶ前にRSPを16の倍数になるように調整(PUSHやPOPはRSPを8バイト単位で変更するから、call命令を発行するときに必ずしもRSPが16の倍数になっているとは限らん)
                                                           #! and 15, 15 -> 15   and 16, 15 -> 0   and 17, 15 -> 1
     echo fmt"  jnz .Lcall{label}"                         #! 比較結果!=0で飛ぶ(RAXが16の倍数じゃない場合飛ぶ)

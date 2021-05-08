@@ -58,15 +58,16 @@ proc checkReserved(): (string, bool) =                  #! tupleを返す
 
 proc getEscapeChar(c: char): char =
   case c
-  of 'a': return '\a'
-  of 'b': return '\b'
-  of 't': return '\t'
+  of 'a': return '\a'                                   # なぜこの自己言及的なソースコードがコンパイルできるかって言うと
+  of 'b': return '\b'                                   # このコンパイラをコンパイルするコンパイラが\nが何であるかを知っているから
+  of 't': return '\t'                                   # \nが10である情報が，オリジンコンパイラから自分のコンパイラのバイナリに埋め込まれる
   of 'n': return '\n'
-  of 'v': return '\v'
-  of 'f': return '\f'
-  of 'r': return '\r'
-  of 'e': return char(27)
-  of '0': return char(0)
+  of 'v': return '\v'                                   # プログラムの意味はソースコードで決まるのではなく
+  of 'f': return '\f'                                   # 実際はソースコードとコンパイラがミックスされた結果
+  of 'r': return '\r'                                   # ソースコードに意味を与えているのがコンパイラ(コンパイラが変に解釈することもできる->セキュリティホールを作れる)
+  # \e for the ascii escape character is a GNU C extension
+  of 'e': return char(27)                               # GCCでは使える（Cの標準ではない） -> '\e'とすると，GCC拡張の\eを知っているコンパイラだけがこのコンパイラをコンパイルするようになる
+  of '0': return char(0)                                # nimは知っているはずだから大丈夫だとは思う
   else: return c
 
 # 複数行コメントアウトチェック

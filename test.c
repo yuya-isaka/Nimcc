@@ -6,8 +6,6 @@
  * This is a block comment.
  */
 
-int g1;
-int g2[4];
 
 int assert(int expected, int actual, char *code) {
   if (expected == actual) {
@@ -17,6 +15,9 @@ int assert(int expected, int actual, char *code) {
     exit(1);
   }
 }
+
+int g1;
+int g2[4];
 
 int ret3() {
   return 3;
@@ -233,6 +234,10 @@ int main() {
   // コンパイラが行うアライメントを実装 \n
   assert(16, ({ struct {char a; int b;} x; sizeof(x); }), "struct {char a; int b;} x; sizeof(x);");
   assert(16, ({ struct {int a; char b;} x; sizeof(x); }), "struct {int a; char b;} x; sizeof(x);");
+
+  // ローカル変数もアライメント \n
+  assert(15, ({ int x; char y; int a=&x; int b=&y; b-a; }), "int x; char y; int a=&x; int b=&y; b-a;");
+  assert(1, ({ char x; int y; int a=&x; int b=&y; b-a; }), "char x; int y; int a=&x; int b=&y; b-a;");
 
   printf("OK\n");
   return 0;

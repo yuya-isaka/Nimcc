@@ -198,7 +198,7 @@ proc gen(node: Node) =
 
   case node.kind                                          #? 計算&比較ふぇーーーーーーーーーず(returnせず，スタックに値を保存するだけ)
   of NdAdd:
-    if node.ty.base != nil:                                                         #! ポインタだったら，型のサイズに合わせたオフセットを求める
+    if node.ty.base != nil:                                                         #! ポインタだったら，型のサイズに合わせたオフセットを求める，　ポインタの加減算はオフセットの分進める
       echo fmt"  imul rdi, {sizeType(node.ty.base)}"                                #! rdi = rdi * {}    
     echo "  add rax, rdi"
   of NdSub:

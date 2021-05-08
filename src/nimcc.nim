@@ -48,6 +48,7 @@ proc main() =
     var offset = 0
     var vl: LvarList = fn.locals        # 引数,ローカル変数のためのオフセットを計算
     while vl != nil:                    # ローカル変数ループ
+      offset = alignTo(offset, vl.lvar.ty.align)
       offset += sizeType(vl.lvar.ty)    # 対象識別子(変数)の型で，offsetは変わる(intとptrは「8」, arrayは「type*size」)
       vl.lvar.offset = offset
       vl = vl.next

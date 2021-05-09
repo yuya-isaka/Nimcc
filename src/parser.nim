@@ -1,24 +1,24 @@
 
 #[
-  ? 目的：tokenを先頭からパースし，「Node型の連結リスト」に変換
-  ? サブ目的：「LvarList型の連結リスト」を生成（変数用）
+   目的：tokenを先頭からパースし，「Node型の連結リスト」に変換
+   サブ目的：「LvarList型の連結リスト」を生成（変数用）
 ]#
 
 import header
 import typer
 import strformat
 
-# local (linked list)
-# global (linked list)
-# scope for varible
-# error
-# literal number for data expansion
-# scope for literal
+# ローカル変数，　関数引数，　LinkedList，　関数内のローカル変数を数珠繋ぎ，　引数も最初に繋がれる
 var locals: LvarList                                            
+# グローバル変数，　文字列リテラル，　LinkedList，　プログラム全体のグローバル変数を数珠繋ぎ，　文字列リテラルも繋がれる，　メモリ上の固定位置に存在（スタックではない），　メモリアドレスに直接アクセスするようにコンパイル
 var globals: LvarList                                           
+# 変数スコープ，　変数検索はこのscopeが対象，　「ブロック」と「文の式」でスコープを過去に戻す(スコープ抜けたら変数解放を実現），　定義する時に追加(右から左)，　実行するときに検索．
 var scope: LvarList
+# エラー表示用，　エラーが起きたトークンを知りたい，　トークンには文字列の先頭アドレスを記憶させている
 var tokPrev: Token = nil                                        
+# 文字列リテラルのラベル，　data領域にアセンブリで書くとき,それぞれの文字列リテラルの場所を示すラベルが必要
 var cnt: int = 0
+# 構造体スコープ，　構造体検索はこのtagScopeが対象，　「ブロック」と「文の式」でスコープを過去に戻す(スコープ抜けたら変数解放を実現），　定義する時に追加(右から左)，　実行するときに検索．
 type TagScope = ref object
   next*: TagScope
   name*: string
@@ -136,7 +136,7 @@ proc pushLvar(name: string, ty: Type, isLocal: bool): Lvar =
   # make scope
   var sc: LvarList = new LvarList
   sc.lvar = lvar
-  sc.next = scope # from right to left
+  sc.next = scope # from right to left 順番に意味がないから右から左 (調べるときに，その場所から次のところを調べ続けたらそれでいい)
   scope = sc
   return lvar
 
@@ -310,7 +310,7 @@ proc stmtExpr(): Node =
   var node: Node = newNode(NdStmtExpr, tokPrev)  # このノードは式だから値を返す
   var cur: Node = new Node
   while not consume("}"): 
-    cur = stmt()
+    cur = stmt()    # 最後の要素を取得したいから，　現在の値を更新し続ける
     node.body.add(cur)  # array
   expect(")")
   scope = sc1     # undo scope
@@ -318,7 +318,7 @@ proc stmtExpr(): Node =
 
   if cur.kind != NdExprStmt:                                                
     errorAt("stmt expr returning void is not supported", cur.tok)
-  node.body[high(node.body)] = cur.lhs  # 最後左辺入力, NdExprStmtから抜ける，難しい
+  node.body[high(node.body)] = cur.lhs  # 取得した最後の値を入力しておく．　これがスタックトップに積まれる
   return node
 
 # 引数評価
@@ -380,7 +380,7 @@ proc structDecl(): Type =
 
   # Read a struct tag
   var tag: (Token, bool) = consumeIdent()
-  if (tag[1] and not chirami("{")):
+  if (tag[1] and not chirami("{")):   # タグづけされてるものを使用しているかチェック, 使用してなかったら定義で呼び出されてる
     var sc: TagScope = findTag(tag[0])
     if sc == nil:
       errorAt("unknown struct type", tag[0])
@@ -412,7 +412,7 @@ proc structDecl(): Type =
       ty.align = mem.ty.align
     mem = mem.next
 
-  if tag[1]:
+  if tag[1]:                            # タグ付きで定義されてたら，tagScopeに追加しておく
     pushTagScope(tag[0], ty)
   
   return ty
@@ -639,8 +639,10 @@ proc postFix(): Node =
 
 proc primary(): Node =
   if consume("("):
+
     if consume("{"):                                                            # 文の式
-      return stmtExpr()
+      return stmtExpr()                                                         # 値を返すからこのprimaryに存在
+
     var node: Node = expr()                                                     # 丸括弧の中は式
     expect(")")
     return node

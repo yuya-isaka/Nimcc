@@ -80,6 +80,7 @@ proc visit(node: Node) =
   visit(node.init)
   visit(node.inc)
   
+  # NdBlock
   for n in node.body:                                             # 配列の場合
     if n != nil:
       visit(n)

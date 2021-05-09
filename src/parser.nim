@@ -14,6 +14,13 @@ var scope: LvarList
 var tokPrev: Token = nil                                        #! エラー表示用！　consumeで進める前のTokenを保持．　エラー表示に使える．　グローバル変数は使い所考えると有益
 var cnt: int = 0
 
+type TagScope = ref object
+  next*: TagScope
+  name*: string
+  ty*: Type
+
+var tagScope: TagScope
+
 #! Token関係----------------------------------------------------------------------------------------------------------------------------
 
 proc chirami(s: string): bool =
@@ -130,6 +137,21 @@ proc pushLvar(name: string, ty: Type, isLocal: bool): Lvar =
   scope = sc
 
   return lvar
+
+proc findTag(tok: Token): TagScope =
+  var sc = tagScope
+  while sc != nil:
+    if sc.name == tok.str:
+      return sc
+    sc = sc.next
+  return nil
+
+proc pushTagScope(tok: Token, ty: Type) =
+  var sc:TagScope = new TagScope
+  sc.next = tagScope
+  sc.name = tok.str
+  sc.ty = ty
+  tagScope = sc
 
 #! newNode ----------------------------------------------------------------------------------------------------------------------------
 
@@ -257,7 +279,8 @@ proc readExprStmt(): Node =
   return newNode(NdExprStmt, expr(), tok)
 
 proc stmtExpr(): Node =
-  var sc: LvarList = scope                                              # 現状のscope
+  var sc1: LvarList = scope                                              # 現状のscope
+  var sc2: TagScope = tagScope
   var node: Node = newNode(NdStmtExpr, tokPrev)                               # NdBlockと違って最後の値を返す！！！！！(途中にreturnがあればそれを返す) -> 式だから
   var cur: Node = new Node
   while not consume("}"):                                             # ruiさんのとは違う実装だよー気をつけてなー未来の自分〜
@@ -265,7 +288,8 @@ proc stmtExpr(): Node =
     node.body.add(cur)                                                    # 配列にしてみた．
   expect(")")
 
-  scope = sc                                                          # scopeが終わったら，新しく追加した変数リストは破棄する． -> scで書き戻し
+  scope = sc1                                                          # scopeが終わったら，新しく追加した変数リストは破棄する． -> scで書き戻し
+  tagScope = sc2
 
   if cur.kind != NdExprStmt:                                                
     errorAt("stmt expr returning void is not supported", cur.tok)
@@ -289,6 +313,8 @@ proc funcArgs(): Node =
 proc declaration(): Node =
   var tok: Token = token
   var ty: Type = basetype()
+  if consume(";"):
+    return newNode(NdNull, tok)
   var name: string = expectIdent()
   ty = readTypeSuffix(ty)                                               # 配列の可能性を考慮
   var lvar: Lvar = pushLvar(name, ty, true)                             # 型付けされたローカル変数をlocalsに追加〜〜〜
@@ -315,8 +341,18 @@ proc structMember(): Member =
 #? 構造体作成 -> 型がメンバー変数を持つ（後々，typer.nimでnode.memberに移る）
 proc structDecl(): Type =
   expect("struct")
+
+  # Read a struct tag
+  var tag: (Token, bool) = consumeIdent()
+  if (tag[1] and not chirami("{")):
+    var sc: TagScope = findTag(tag[0])
+    if sc == nil:
+      errorAt("unknown struct type", tag[0])
+    return sc.ty
+
   expect("{")
 
+  # Read struct members
   var head = new Member
   head.next = nil
   var cur = head
@@ -339,6 +375,9 @@ proc structDecl(): Type =
     if ty.align < mem.ty.align:                     # 構造体全体のアライメントは大きい方に合わせる（charだけなら1のまま，int,ptrが入ると8になる）
       ty.align = mem.ty.align
     mem = mem.next
+
+  if tag[1]:
+    pushTagScope(tag[0], ty)
   
   return ty
 
@@ -455,10 +494,12 @@ proc stmt(): Node =
 
   if consume("{"):                                                      # NdStmtExprと違って，値を返さない（文）
     var node: Node = newNode(NdBlock, tokPrev)
-    var sc: LvarList = scope                                                      # 現状のscope記憶
+    var sc1: LvarList = scope                                                      # 現状のscope記憶
+    var sc2: TagScope = tagScope
     while not consume("}"):                                             # ruiさんのとは違う実装だよー気をつけてなー未来の自分〜
       node.body.add(stmt())                                             # 配列にしてみた．
-    scope = sc                                                          # scopeが終わったら，新しく追加した変数リストは破棄する． -> scで書き戻し
+    scope = sc1                                                          # scopeが終わったら，新しく追加した変数リストは破棄する． -> scで書き戻し
+    tagScope = sc2
     return node
 
   if isTypeName():                                                      # 型名かチラ見！！！ （intかchar)

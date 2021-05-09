@@ -250,6 +250,11 @@ int main() {
   assert(16, ({ int x; int y; int z; int a=&x; int b=&y; int c=&z; c-a; }), "char x; int y; int a=&x; int b=&y; b-a;");
   // assert(16, ({ int x; char y; int a=&x; int b=&y; b; }), "int x; char y; int a=&x; int b=&y; b-a;"); -> 変な数字（アドレス）になる \n
 
+    assert(16, ({ struct t {int a; int b;} x; struct t y; sizeof(y); }), "struct t {int a; int b;} x; struct t y; sizeof(y);");
+  assert(16, ({ struct t {int a; int b;}; struct t y; sizeof(y); }), "struct t {int a; int b;}; struct t y; sizeof(y);");
+  assert(2, ({ struct t {char a[2];}; { struct t {char a[4];}; } struct t y; sizeof(y); }), "struct t {char a[2];}; { struct t {char a[4];}; } struct t y; sizeof(y);");
+  assert(3, ({ struct t {int x;}; int t=1; struct t y; y.x=2; t+y.x; }), "struct t {int x;}; int t=1; struct t y; y.x=2; t+y.x;");
+
   printf("OK\n");
   return 0;
 }

@@ -8,34 +8,46 @@ import header
 import typer
 import strformat
 
-var locals: LvarList                                            #! ローカル変数（連結リスト）
-var globals: LvarList                                           #! グローバル変数（連結リスト）
+# local (linked list)
+# global (linked list)
+# scope for varible
+# error
+# literal number for data expansion
+# scope for literal
+var locals: LvarList                                            
+var globals: LvarList                                           
 var scope: LvarList
-var tokPrev: Token = nil                                        #! エラー表示用！　consumeで進める前のTokenを保持．　エラー表示に使える．　グローバル変数は使い所考えると有益
+var tokPrev: Token = nil                                        
 var cnt: int = 0
-
 type TagScope = ref object
   next*: TagScope
   name*: string
   ty*: Type
-
 var tagScope: TagScope
 
-#! Token関係----------------------------------------------------------------------------------------------------------------------------
-
+# 次トークン，予想チェック
+# params: string
+# return: bool
 proc chirami(s: string): bool =
   if token.kind != TkReserved or token.str != s:
     return false
   return true
 
+# 次トークン，予約語チェック
+# params:
+# return: bool
 proc isTypeName(): bool =
   return chirami("int") or chirami("char") or chirami("struct")
 
+# 次トークン，終端チェック
+# params:
+# return: bool
 proc atEof(): bool =
   return token.kind == TkEof
 
-#! Token関係, token進める----------------------------------------------------------------------------------------------------------------------------
-
+# 次トークン，予想通り，トークンを進める
+# params: string
+# return: bool
 proc consume(s: string): bool =
   if not chirami(s):
     return false
@@ -43,101 +55,94 @@ proc consume(s: string): bool =
   token = token.next
   return true
 
+# 次トークン，予想通り，トークン進める
+# params: string
+# return:
 proc expect(s: string) =
   if not chirami(s):
     errorAt(fmt"expected, {s}", token)
-
   token = token.next
 
+# 次トークン，数値，トークン進める
+# params:
+# return: int
 proc expectNumber(): int =
   if token.kind != TkNum:
     errorAt("数ではありません．", token)
-
   var val: int = token.val
   token = token.next
   return val
 
-# ?変数チェック1
+# 次トークン，識別子チェック
+# params:
+# return: (Token, bool)
 proc consumeIdent(): (Token, bool) =
   if token.kind != TkIdent:
-    return (nil, false)                                         # よくみたらここでnil返してるやんけ!!!
-
+    return (nil, false)                                   
   var tmpTok: Token = token
   token = token.next
   return (tmpTok, true)
 
-# ?変数チェック2
+# 次トークン，識別子チェック
+# params:
+# return: string
 proc expectIdent(): string =
   if token.kind != TkIdent:
     errorAt("識別子ではありません", token)
-
   var val: string = token.str
   token = token.next
   return val
 
-# ?文字列リテラルチェック
+# 次トークン，文字列リテラルチェック
+# params:
+# return: bool
 proc consumeStr(): bool =
   if token.kind != TkStr:
     return false
   token = token.next
   return true
 
-#! 変数関係----------------------------------------------------------------------------------------------------------------------------
-
-#? 既に登録されている変数がチェック
-proc findLvar(tok: Token): (Lvar, bool) =                       #! tupleを返す(この設計は直さないといけん)
-
-  # scope内の変数チェック
-  var vl: LvarList = scope                                      #! scopeを調べる
+# 変数検索 (scope)
+# params: Token
+# return: (Lvar, bool)
+proc findLvar(tok: Token): (Lvar, bool) =                       
+  var vl: LvarList = scope                                      
   while vl != nil:
     if vl.lvar.name == tok.str:
       return (vl.lvar, true)
     vl = vl.next
+  return (nil, false)         
 
-  # #? ローカル変数チェク
-  # var vl: LvarList = locals
-  # while vl != nil:
-  #   var lvar = vl.lvar
-  #   if lvar.name == tok.str:
-  #     return (lvar, true)
-  #   vl = vl.next
-
-  # #? グローバル変数チェック
-  # vl = globals
-  # while vl != nil:
-  #   var lvar = vl.lvar
-  #   if lvar.name == tok.str:
-  #     return (lvar, true)
-  #   vl = vl.next
-
-  return (nil, false)                                           #! 一度バグって何も動かなくなった．ここでnilを返すように変更したのが良かった．（初期化されていないオブジェクトを返そうとしていた？）
-
-#? 変数の連結リストに追加
+# 変数登録
+# params: string, Type, bool
+# return: Lvar
 proc pushLvar(name: string, ty: Type, isLocal: bool): Lvar =
-  # 変数作成
+  # make lvar
   var lvar: Lvar = new Lvar
   lvar.name = name
   lvar.ty = ty
   lvar.isLocal = isLocal
-
-  # どっちの連結リストに追加するか決定
+  # make LvarList
   var vl: LvarList = new LvarList
   vl.lvar = lvar
-  if isLocal:                          #! ローカル変数 
+  if isLocal:                           
+    # local
     vl.next = locals
     locals = vl
-  else:                                #! グローバル変数
+  else:                               
+    # global
     vl.next = globals
     globals = vl
-
-  # scope内に変数追加
+  # make scope
   var sc: LvarList = new LvarList
   sc.lvar = lvar
-  sc.next = scope                        # 右から左に生やしていく
+  sc.next = scope # from right to left
   scope = sc
-
   return lvar
 
+# 構造体検索 (tagScope)
+# params: Token
+# return: TagScope
 proc findTag(tok: Token): TagScope =
   var sc = tagScope
   while sc != nil:
@@ -146,6 +151,9 @@ proc findTag(tok: Token): TagScope =
     sc = sc.next
   return nil
 
+# 構造体登録
+# params: Token, Type
+# return:
 proc pushTagScope(tok: Token, ty: Type) =
   var sc:TagScope = new TagScope
   sc.next = tagScope
@@ -153,45 +161,48 @@ proc pushTagScope(tok: Token, ty: Type) =
   sc.ty = ty
   tagScope = sc
 
-#! newNode ----------------------------------------------------------------------------------------------------------------------------
-
-#? 多重ディスパッチ, オーバーロード
-#? kind(全ての元となる), こいつ単体では何の値も持っていない
+# 元ノード
+# params: NodeKind, Token
+# return: Node
 proc newNode(kind: NodeKind, tok: Token): Node =
   var node: Node = new Node
   node.kind = kind
   node.tok = tok
   return node
 
-#? kind, lhs, rhs
+# 左辺右辺ノード
+# params: NodeKind, Node, Node, Token
+# return: Node
 proc newNode(kind: NodeKind, lhs: Node, rhs: Node, tok: Token): Node =
   var node: Node = newNode(kind, tok)
   node.lhs = lhs
   node.rhs = rhs
   return node
 
-#? kind, lhs
-# NdReturn, NdExprStmt用 （;で終わるものを扱う)
+# 左辺ノード (return, ExprStmt)
+# params: NodeKind, Node, Token
+# return: Node
 proc newNode(kind: NodeKind, lhs: Node, tok: Token): Node =
   var node: Node = newNode(kind, tok)
   node.lhs = lhs
   return node
 
-#? val
+# 数値ノード
+# params: int, Token
+# return: Node
 proc newNode(val: int, tok: Token): Node =
   var node: Node = newNode(NdNum, tok)
   node.val = val
   return node
 
-#? lvar 
+# 変数ノード
+# params: Lvar, Token
+# return: Node
 proc newNode(lvar: Lvar, tok: Token): Node =
   var node: Node = newNode(NdLvar, tok)
   node.lvar = lvar
   return node
 
-#! 生成規則->関数マッピング----------------------------------------------------------------------------------------------------------------------------
-
-# 優先度低い順
 proc program*(): Program
 proc function(): Function
 proc stmt(): Node
@@ -205,12 +216,12 @@ proc unary(): Node
 proc postFix(): Node
 proc primary(): Node
 
-#? 補助関数----------------------------------------------------------------------------------------------------------------------------
-
 proc structDecl(): Type
 
-#? basetype = ("char" | int" | struct-decl) "*"*
-proc basetype(): Type =                                                   # 識別子はここで型付け
+# 型
+# params:
+# return: Type
+proc basetype(): Type =                                             
   if not isTypeName():
     errorAt("typename expected", token)
 
@@ -218,7 +229,7 @@ proc basetype(): Type =                                                   # 識�
   if consume("char"):
     ty = charType()
   elif consume("int"):
-    ty = intType()                                                      # 現状char以外はint
+    ty = intType()                                                  
   else:
     ty = structDecl()
 
@@ -226,47 +237,56 @@ proc basetype(): Type =                                                   # 識�
     ty = pointerType(ty)
   return ty
 
+# 配列サフィックス
+# params: var Type
+# return: Type
 proc readTypeSuffix(base: var Type): Type =
   if not consume("["):
     return base
   var size: int = expectNumber()
   expect("]")
-  base = readTypeSuffix(base)                                           # int a[3][3] のような多次元配列に対応（再帰）
+  base = readTypeSuffix(base)   # multi demential
   return arrayType(base, size)
 
-#? 関数の引数を読む！！
+# 関数引数・子
+# params:
+# return: LvarList
 proc readFuncParam(): LvarList =
-  var ty: Type = basetype()                                             #! 現状baseの型はintのみ
+  var ty: Type = basetype()                                         
   var name: string = expectIdent()
-  ty = readTypeSuffix(ty)                                               #! 配列の可能性を考慮
-
+  ty = readTypeSuffix(ty)             
   var vl: LvarList = new LvarList
-  vl.lvar = pushLvar(name, ty, true)                                          #! 関数の引数をlocalsに追加
+  vl.lvar = pushLvar(name, ty, true)  # locals list
   return vl
 
-#? 関数の引数を読む！！
+# 関数引数・親
+# params:
+# return: LvarList
 proc readFuncParams(): LvarList =
   if consume(")"):
     return nil
-
   var head: LvarList = readFuncParam()
   var cur: LvarList = head
-
   while not consume(")"):
     expect(",")
     cur.next = readFuncParam()
     cur = cur.next
-
   return head
 
+# 事前関数チェック
+# params:
+# return: bool
 proc isFunction(): bool =
   var tok: Token = token
   discard basetype()
   var tmp: (Token, bool) = consumeIdent()
   var isFunc: bool = tmp[1] and consume("(")
-  token = tok                                                         # トークン元に戻す（関数かどうか事前にチェックするだけで， tokenは進めない）
+  token = tok   # undo token
   return isFunc
 
+# グローバル変数登録
+# params:
+# return:
 proc globalLvar() =
   var ty: Type = basetype()
   var name: string = expectIdent()
@@ -274,60 +294,76 @@ proc globalLvar() =
   expect(";")
   discard pushLvar(name, ty, false)
 
+# 式の文
+# params:
+# return: Node
 proc readExprStmt(): Node =
-  var tok: Token = token                                                       # この関数を呼び出すときはconsumeでtokenの連結が進められないから．現在参照している部分を見ればいい
+  var tok: Token = token                
   return newNode(NdExprStmt, expr(), tok)
 
+# 文の式
+# params:
+# return: Node
 proc stmtExpr(): Node =
-  var sc1: LvarList = scope                                              # 現状のscope
-  var sc2: TagScope = tagScope
-  var node: Node = newNode(NdStmtExpr, tokPrev)                               # NdBlockと違って最後の値を返す！！！！！(途中にreturnがあればそれを返す) -> 式だから
+  var sc1: LvarList = scope    # scope variable
+  var sc2: TagScope = tagScope # scope struct
+  var node: Node = newNode(NdStmtExpr, tokPrev)  # このノードは式だから値を返す
   var cur: Node = new Node
-  while not consume("}"):                                             # ruiさんのとは違う実装だよー気をつけてなー未来の自分〜
+  while not consume("}"): 
     cur = stmt()
-    node.body.add(cur)                                                    # 配列にしてみた．
+    node.body.add(cur)  # array
   expect(")")
-
-  scope = sc1                                                          # scopeが終わったら，新しく追加した変数リストは破棄する． -> scで書き戻し
-  tagScope = sc2
+  scope = sc1     # undo scope
+  tagScope = sc2  # undo scope
 
   if cur.kind != NdExprStmt:                                                
     errorAt("stmt expr returning void is not supported", cur.tok)
-  # cur = cur.lhs
-  node.body[high(node.body)] = cur.lhs                                    # 最後は左辺を入力することで, NdExprStmtから抜ける（add rsp, 8)をしないようにする
+  node.body[high(node.body)] = cur.lhs  # 最後左辺入力, NdExprStmtから抜ける，難しい
   return node
 
-#? funcArgs =  "(" (assign ("," assign)*)? ")"      関数の引数を評価し返す -> node.argsで持つ
+# 引数評価
+# params:
+# return: Node (linked list)
 proc funcArgs(): Node =
   if consume(")"):
     return nil
-  
-  var head: Node = expr()                                                       # 元々assign()だったけど分かりにくいから， expr()にした
+  var head: Node = expr()
   var cur: Node = head
   while consume(","):
     cur.next = expr()
     cur = cur.next
   expect(")")
-  return head                                                           # 評価結果をNodeの連結リストで返す．
+  return head       
 
+# 識別子定義
+# params:
+# return: Node
 proc declaration(): Node =
   var tok: Token = token
   var ty: Type = basetype()
+
+  # null
   if consume(";"):
     return newNode(NdNull, tok)
-  var name: string = expectIdent()
-  ty = readTypeSuffix(ty)                                               # 配列の可能性を考慮
-  var lvar: Lvar = pushLvar(name, ty, true)                             # 型付けされたローカル変数をlocalsに追加〜〜〜
 
-  if consume(";"):                                                      # 初期化されてない変数宣言
+  # variable
+  var name: string = expectIdent()
+  # array
+  ty = readTypeSuffix(ty)                             
+  var lvar: Lvar = pushLvar(name, ty, true)           
+
+  # null (初期化されていない変数)
+  if consume(";"):                                      
     return newNode(NdNull, tokPrev)
 
+  # assign
   expect("=")
-  var lhs: Node = newNode(lvar, tok)                                    # 変数生成
+  var lhs: Node = newNode(lvar, tok)                            
   var rhs: Node = expr()
   expect(";")
-  var node: Node = newNode(NdAssign, lhs, rhs, tok)                     # 代入処理，　int a = 3;
-  return newNode(NdExprStmt, node, tok)                                 # 代入では評価結果をスタックに残す必要はない, 式の文
+  var node: Node = newNode(NdAssign, lhs, rhs, tok)           
+  # 代入では評価結果をスタックに残す必要はない, 式の文
+  return newNode(NdExprStmt, node, tok)                                 
 
 #? 構造体メンバー作成
 proc structMember(): Member =
@@ -633,7 +669,7 @@ proc primary(): Node =
   var tmpTok: Token = token
   if consumeStr():
     var ty: Type = arrayType(charType(), tmpTok.stringLiteral.len)                        # 文字列リテラルはChar型の配列,  null終端分の文字列を+1で追加
-    var lvar: Lvar = pushLvar(fmt".L.data.{cnt}", ty, false)
+    var lvar: Lvar = pushLvar(fmt".L.data.{cnt}", ty, false)                          # 文字列リテラルはデータ領域に確保
     inc(cnt)
     lvar.stringLiteral = tmpTok.stringLiteral
     return newNode(lvar, tmpTok)

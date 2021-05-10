@@ -1,23 +1,31 @@
 
+
 #[
    目的：tokenを先頭からパースし，「Node型の連結リスト」に変換
    サブ目的：「LvarList型の連結リスト」を生成（変数用）
 ]#
 
+
 import header
 import typer
 import strformat
 
+
 # ローカル変数，　関数引数，　LinkedList，　関数内のローカル変数を数珠繋ぎ，　引数も最初に繋がれる
 var locals: LvarList                                            
+
 # グローバル変数，　文字列リテラル，　LinkedList，　プログラム全体のグローバル変数を数珠繋ぎ，　文字列リテラルも繋がれる，　メモリ上の固定位置に存在（スタックではない），　メモリアドレスに直接アクセスするようにコンパイル
 var globals: LvarList                                           
+
 # 変数スコープ，　変数検索はこのscopeが対象，　「ブロック」と「文の式」でスコープを過去に戻す(スコープ抜けたら変数解放を実現），　定義する時に追加(右から左)，　実行するときに検索．
 var scope: LvarList
+
 # エラー表示用，　エラーが起きたトークンを知りたい，　トークンには文字列の先頭アドレスを記憶させている
 var tokPrev: Token = nil                                        
+
 # 文字列リテラルのラベル，　data領域にアセンブリで書くとき,それぞれの文字列リテラルの場所を示すラベルが必要
 var cnt: int = 0
+
 # 構造体スコープ，　構造体検索はこのtagScopeが対象，　「ブロック」と「文の式」でスコープを過去に戻す(スコープ抜けたら変数解放を実現），　定義する時に追加(右から左)，　実行するときに検索．
 type TagScope = ref object
   next*: TagScope
@@ -25,29 +33,22 @@ type TagScope = ref object
   ty*: Type
 var tagScope: TagScope
 
-# 次トークン，予想チェック
-# params: string
-# return: bool
+
+# 次トークン先読み　（予約文字列），　真偽値返却，　トークン進めない
 proc chirami(s: string): bool =
   if token.kind != TkReserved or token.str != s:
     return false
   return true
 
-# 次トークン，予約語チェック
-# params:
-# return: bool
+# 次トークン先読み　（型名），　型名を期待する箇所で使用
 proc isTypeName(): bool =
   return chirami("int") or chirami("char") or chirami("struct")
 
-# 次トークン，終端チェック
-# params:
-# return: bool
+# 次トークン先読み　（終端），　終端を期待する箇所で使用　（programで全ての関数かグローバル変数を読み終わるまで）
 proc atEof(): bool =
   return token.kind == TkEof
 
-# 次トークン，予想通り，トークンを進める
-# params: string
-# return: bool
+# 次トークン先読み　（予約文字列），　予約文字列かな〜?　真偽値返却，　トークン進める
 proc consume(s: string): bool =
   if not chirami(s):
     return false
@@ -55,17 +56,13 @@ proc consume(s: string): bool =
   token = token.next
   return true
 
-# 次トークン，予想通り，トークン進める
-# params: string
-# return:
+# 次トークン先読み　（予約文字列），　予約文字列じゃないとダメ!，　トークン進める
 proc expect(s: string) =
   if not chirami(s):
     errorAt(fmt"expected, {s}", token)
   token = token.next
 
-# 次トークン，数値，トークン進める
-# params:
-# return: int
+# 次トークン先読み　（数値・配列数），　数値関連じゃないとダメ！，　数値返却，　トークン進める
 proc expectNumber(): int =
   if token.kind != TkNum:
     errorAt("数ではありません．", token)
@@ -73,9 +70,7 @@ proc expectNumber(): int =
   token = token.next
   return val
 
-# 次トークン，識別子チェック
-# params:
-# return: (Token, bool)
+# 次トークン先読み　（変数名・関数名・構造体タグ名），　識別子かな〜?，　トークン・真偽値返却，　トークン進める
 proc consumeIdent(): (Token, bool) =
   if token.kind != TkIdent:
     return (nil, false)                                   
@@ -83,9 +78,7 @@ proc consumeIdent(): (Token, bool) =
   token = token.next
   return (tmpTok, true)
 
-# 次トークン，識別子チェック
-# params:
-# return: string
+# 次トークン先読み　（変数名・関数名・構造体タグ名），　識別子じゃないとダメ！，　識別文字列返却，　トークン進める
 proc expectIdent(): string =
   if token.kind != TkIdent:
     errorAt("識別子ではありません", token)
@@ -93,18 +86,15 @@ proc expectIdent(): string =
   token = token.next
   return val
 
-# 次トークン，文字列リテラルチェック
-# params:
-# return: bool
+# 次トークン先読み　（文字列リテラル），　真偽値返却，　トークン進める
 proc consumeStr(): bool =
   if token.kind != TkStr:
     return false
   token = token.next
   return true
 
-# 変数検索 (scope)
-# params: Token
-# return: (Lvar, bool)
+
+# 登録済み変数検索，　ローカル変数・グローバル変数
 proc findLvar(tok: Token): (Lvar, bool) =                       
   var vl: LvarList = scope                                      
   while vl != nil:
@@ -113,30 +103,28 @@ proc findLvar(tok: Token): (Lvar, bool) =
     vl = vl.next
   return (nil, false)         
 
-# 変数登録
-# params: string, Type, bool
-# return: Lvar
+# 変数登録，　ローカル変数・関数引数・グローバル変数・文字列リテラル
 proc pushLvar(name: string, ty: Type, isLocal: bool): Lvar =
-  # make lvar
+  # 変数作成　（名前，　型，　ローカルか否か）
   var lvar: Lvar = new Lvar
   lvar.name = name
   lvar.ty = ty
   lvar.isLocal = isLocal
-  # make LvarList
+  # 変数LinkedList作成　（繋げるだけ）
   var vl: LvarList = new LvarList
   vl.lvar = lvar
   if isLocal:                           
-    # local
+    # ローカル変数LinkedList　（繋げるだけ）
     vl.next = locals
     locals = vl
   else:                               
-    # global
+    # グローバル変数LinkedList　（繋げるだけ）
     vl.next = globals
     globals = vl
-  # make scope
+  # スコープLinkedList作成　（繋げるだけ）
   var sc: LvarList = new LvarList
   sc.lvar = lvar
-  sc.next = scope # from right to left 順番に意味がないから右から左 (調べるときに，その場所から次のところを調べ続けたらそれでいい)
+  sc.next = scope # LinkedListを辿るために「右から左」に連結
   scope = sc
   return lvar
 

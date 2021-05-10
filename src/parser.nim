@@ -147,50 +147,55 @@ proc pushTagScope(tokName: string, ty: Type) =
 
 
 # 起点ノード
-# forとかそれぞれのnewNode作っても良いかも？
-# params: NodeKind, Token
-# return: Node
+# Null(int; int a;)，　If，　While，　For，　Funcall，　Block，　StmtExpr
 proc newNode(kind: NodeKind, tok: Token): Node =
+  # params: NodeKind, Token
+  # return: Node
   var node: Node = new Node
   node.kind = kind
   node.tok = tok
   return node
 
 # 左辺右辺ノード
-# params: NodeKind, Node, Node, Token
-# return: Node
+# Assign(定義，代入)，　Eq，　Ne，　L，　Le，　Add，　Sub，　Mul，　Div
 proc newNode(kind: NodeKind, lhs: Node, rhs: Node, tok: Token): Node =
+  # params: NodeKind, Node, Node, Token
+  # return: Node
   var node: Node = newNode(kind, tok)
   node.lhs = lhs
   node.rhs = rhs
   return node
 
-# 左辺ノード (return, ExprStmt)
-# params: NodeKind, Node, Token
-# return: Node
+# 左辺ノード 
+# Return，　ExprStmt，　Addr,　Deref,　Member，　Sizeof
 proc newNode(kind: NodeKind, lhs: Node, tok: Token): Node =
+  # params: NodeKind, Node, Token
+  # return: Node
   var node: Node = newNode(kind, tok)
   node.lhs = lhs
   return node
 
 # 数値ノード
-# params: int, Token
-# return: Node
+# 数値，　Sub
 proc newNode(val: int, tok: Token): Node =
+  # params: int, Token
+  # return: Node
   var node: Node = newNode(NdNum, tok)
   node.val = val
   return node
 
 # 変数ノード
-# params: Lvar, Token
-# return: Node
+# 変数（定義・実行），　文字列リテラル
 proc newNode(lvar: Lvar, tok: Token): Node =
+  # params: Lvar, Token
+  # return: Node
   var node: Node = newNode(NdLvar, tok)
   node.lvar = lvar
   return node
 
 
 proc program*(): Program
+# 優先度低い順
 proc function(): Function
 proc stmt(): Node
 proc expr(): Node

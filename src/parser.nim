@@ -94,16 +94,16 @@ proc consumeStr(): bool =
   return true
 
 
-# 登録済み変数検索，　ローカル変数・グローバル変数
-proc findLvar(tok: Token): (Lvar, bool) =                       
+# 連結済み変数検索，　ローカル変数・グローバル変数
+proc findLvar(tokName: string): (Lvar, bool) =                       
   var vl: LvarList = scope                                      
   while vl != nil:
-    if vl.lvar.name == tok.str:
+    if vl.lvar.name == tokName:
       return (vl.lvar, true)
     vl = vl.next
   return (nil, false)         
 
-# 変数登録，　ローカル変数・関数引数・グローバル変数・文字列リテラル
+# 変数連結，　ローカル変数・関数引数・グローバル変数・文字列リテラル
 proc pushLvar(name: string, ty: Type, isLocal: bool): Lvar =
   # 変数作成　（名前，　型，　ローカルか否か）
   var lvar: Lvar = new Lvar
@@ -128,28 +128,26 @@ proc pushLvar(name: string, ty: Type, isLocal: bool): Lvar =
   scope = sc
   return lvar
 
-# 構造体検索 (tagScope)
-# params: Token
-# return: TagScope
-proc findTag(tok: Token): TagScope =
+# 連結済み構造体タグ検索，　見つけたTagScopeを返却　（現状sc.tokでも良い）
+proc findTag(tokName: string): TagScope =
   var sc = tagScope
   while sc != nil:
-    if sc.name == tok.str:
+    if sc.name == tokName:
       return sc
     sc = sc.next
   return nil
 
-# 構造体登録
-# params: Token, Type
-# return:
-proc pushTagScope(tok: Token, ty: Type) =
-  var sc:TagScope = new TagScope
+# 構造体タグ連結,　引数の「トークン名」と「型」を持つTagScopeを数珠繋ぎ
+proc pushTagScope(tokName: string, ty: Type) =
+  var sc: TagScope = new TagScope
   sc.next = tagScope
-  sc.name = tok.str
+  sc.name = tokName
   sc.ty = ty
   tagScope = sc
 
-# 元ノード
+
+# 起点ノード
+# forとかそれぞれのnewNode作っても良いかも？
 # params: NodeKind, Token
 # return: Node
 proc newNode(kind: NodeKind, tok: Token): Node =
@@ -190,6 +188,7 @@ proc newNode(lvar: Lvar, tok: Token): Node =
   var node: Node = newNode(NdLvar, tok)
   node.lvar = lvar
   return node
+
 
 proc program*(): Program
 proc function(): Function
@@ -369,7 +368,7 @@ proc structDecl(): Type =
   # Read a struct tag
   var tag: (Token, bool) = consumeIdent()
   if (tag[1] and not chirami("{")):   # タグづけされてるものを使用しているかチェック, 使用してなかったら定義で呼び出されてる
-    var sc: TagScope = findTag(tag[0])
+    var sc: TagScope = findTag(tag[0].str)
     if sc == nil:
       errorAt("unknown struct type", tag[0])
     return sc.ty
@@ -401,7 +400,7 @@ proc structDecl(): Type =
     mem = mem.next
 
   if tag[1]:                            # タグ付きで定義されてたら，tagScopeに追加しておく
-    pushTagScope(tag[0], ty)
+    pushTagScope(tag[0].str, ty)
   
   return ty
 
@@ -649,7 +648,7 @@ proc primary(): Node =
       return node
 
     #? 変数
-    var tmpLvar: (Lvar, bool) = findLvar(tok[0])                                        # 変数は既に前方宣言されていて，localsに登録されているはず
+    var tmpLvar: (Lvar, bool) = findLvar(tok[0].str)                                        # 変数は既に前方宣言されていて，localsに登録されているはず
     if not tmpLvar[1]:
                                                                           # tmpLvar[0] = pushLvar(tok[0].str)  # 昔はここで変数をlocalsに追加してた．　今は上の方でintを見つけた瞬間に格納している．
       errorAt("undefined variable", tok[0])                               # ここで見たことない変数が来るのはおかしいからエラー

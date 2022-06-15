@@ -6,15 +6,16 @@
 
 - Having [nim](https://nim-lang.org/), gcc, make, binutils and libc6-dev installed.
 
-    ```
-    $ sudo apt install -y nim gcc make binutils libc6-dev
-    ```
+## Setup
 - Setting up a Linux development environment using Docker
+
+- The code below assumes that nim-cghd repository is cloned directly under HOME directory.
+
     ```
     Open the directory containing the Dockerfile and type
 
-    $ docker build -t {containerName} .
-    $ docker run --rm -it -v $HOME/nimcc:/home/user/nimcc {containerName}
+    $ docker build -t {container-name} .
+    $ docker run --rm -it -v -w /home/user/nim-cghd $HOME/nim-cghd:/home/user/nim-cghd {container-name}
     ```
 
 ## How to run

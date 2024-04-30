@@ -27,7 +27,7 @@
 
 ### Native Linux Setup (x86_64)
 
-- Setting up the native Linux system by directly installing the necessary development tools.
+- Setting up the native Linux environment by directly installing the necessary development tools.
 
 - Execute the following commands to install the required tools:
 

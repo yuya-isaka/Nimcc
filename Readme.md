@@ -8,7 +8,9 @@
 - Setting up the Linux development environment using a Dockerfile.
     - The environment will include the following tools installed: "[nim](https://nim-lang.org/), gcc, make, binutils, libc6-dev".
 
-- The code below assumes that Nimcc repository is cloned directly under HOME directory.
+- The code below assumes that Nimcc repository is cloned directly under $HOME directory.
+
+- Create a Docker container named 'nimcc' from an image. (Feel free to change the name of the container as you like.)
 
     ```
     Open the directory containing the Dockerfile and type

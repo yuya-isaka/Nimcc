@@ -6,7 +6,7 @@
 
 ## Setup
 - Setting up the Linux development environment using a Dockerfile.
-    - The environment will include the following tools installed: "[nim](https://nim-lang.org/), gcc, make, binutils, libc6-dev".
+    - The environment will include the following tools installed: [nim](https://nim-lang.org/), gcc, make, binutils, libc6-dev.
 
 - The code below assumes that Nimcc repository is cloned directly under $HOME directory.
 

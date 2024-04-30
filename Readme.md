@@ -1,32 +1,35 @@
 # Nimcc: A mini C compiler written in Nim (WIP)
 
 ## Prerequisites
-- A Docker environment or a native 64-bit Linux environment on x86_64 architecture.
+
+- Either a Docker environment or a native Linux environment on x86_64.
+
     - MacOS is quite compatible with Linux at the source level of assembly, but not fully compatible.
 
 ## Setup
 
-### Setting up the environment using Docker
+### Docker Setup
 
 - Setting up the Linux development environment using a Dockerfile.
-    - The environment will include the following tools installed: [nim](https://nim-lang.org/), gcc, make, binutils, libc6-dev.
+
+    - The environment will include the following tools installed: [nim](https://nim-lang.org/), gcc, make, binutils, libc6-dev gdb sudo.
 
 - The code below assumes that Nimcc repository is cloned directly under `$HOME` directory.
 
-- Create a Docker container named 'nimcc' from an image. (Feel free to change the name of the container as you like.)
+- To create and start the Docker container named 'nimcc' (you can change the container name as desired), execute:
 
     ```
-    Open the directory containing the Dockerfile and type
+    Open the directory containing the Dockerfile and type:
 
     $ docker build -t nimcc .
     $ docker run --rm -it -w /home/user/Nimcc -v $HOME/Nimcc:/home/user/Nimcc nimcc
     ```
 
-### Setting up the environment on Linux (x86_64)
+### Native Linux Setup (x86_64)
 
-- The environment setup on a native Linux system mirrors the Docker environment, ensuring consistency across platforms.
+- Setting up the native Linux system by directly installing the necessary development tools.
 
-- Install the necessary tools directly on your Linux system
+- Execute the following commands to install the required tools:
 
     ```
     $ sudo apt update
@@ -34,6 +37,7 @@
     ```
 
 ## How to test
+
 - Open the directory and type `make` in the terminal.
 
     ```
@@ -59,6 +63,7 @@
     - You can also write your own C code and compile it using Nimcc.
 
 ## Features
+
 - A nimcc can execute the code written in test.c.
     - Basic arithmetic operations
     - Unary plus and unary minus
@@ -71,6 +76,7 @@
     - Primitive data eype (int)
 
 ## Reference
+
 - https://www.sigbus.info/compilerbook
 
 <!-- ## License

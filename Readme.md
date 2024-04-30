@@ -14,7 +14,7 @@
     Open the directory containing the Dockerfile and type
 
     $ docker build -t {container-name} .
-    $ docker run --rm -it -v -w /home/user/Nimcc $HOME/Nimcc:/home/user/Nimcc {container-name}
+    $ docker run --rm -it -w /home/user/Nimcc -v $HOME/Nimcc:/home/user/Nimcc nimcc
     ```
 
 ## How to run

@@ -1,14 +1,17 @@
 # Nimcc: A mini C compiler written in Nim (WIP)
 
 ## Prerequisites
-- 64-bit Linux environment
+- A Docker environment or a native 64-bit Linux environment on x86_64 architecture.
     - MacOS is quite compatible with Linux at the source level of assembly, but not fully compatible.
 
 ## Setup
+
+### Setting up the environment using Docker
+
 - Setting up the Linux development environment using a Dockerfile.
     - The environment will include the following tools installed: [nim](https://nim-lang.org/), gcc, make, binutils, libc6-dev.
 
-- The code below assumes that Nimcc repository is cloned directly under $HOME directory.
+- The code below assumes that Nimcc repository is cloned directly under `$HOME` directory.
 
 - Create a Docker container named 'nimcc' from an image. (Feel free to change the name of the container as you like.)
 
@@ -19,12 +22,23 @@
     $ docker run --rm -it -w /home/user/Nimcc -v $HOME/Nimcc:/home/user/Nimcc nimcc
     ```
 
+### Setting up the environment on Linux (x86_64)
+
+- The environment setup on a native Linux system mirrors the Docker environment, ensuring consistency across platforms.
+
+- Install the necessary tools directly on your Linux system
+
+    ```
+    $ sudo apt update
+    $ sudo apt install -y gcc make git binutils libc6-dev
+    ```
+
 ## How to test
-- Open the directory and type ```make``` in the terminal.
+- Open the directory and type `make` in the terminal.
 
     ```
     In Docker
-    If it says 'Ok', it means that all tests have passed!
+    If it says 'OK', it means that all tests have passed!
     ------------------------------------------------------
 
     $ make

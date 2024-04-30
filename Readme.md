@@ -17,8 +17,30 @@
     $ docker run --rm -it -w /home/user/Nimcc -v $HOME/Nimcc:/home/user/Nimcc nimcc
     ```
 
-## How to run
+## How to test
 - Open the directory and type ```make``` in the terminal.
+
+    ```
+    In Docker
+    If it says 'Ok', it means that all tests have passed!
+    ------------------------------------------------------
+
+    $ make
+      .
+      .
+      .
+    struct t {int a; int b;} x; struct t y; sizeof(y); => 16
+    struct t {int a; int b;}; struct t y; sizeof(y); => 16
+    struct t {char a[2];}; { struct t {char a[4];}; } struct t y; sizeof(y); => 2
+    struct t {int x;}; int t=1; struct t y; y.x=2; t+y.x; => 3
+    OK
+    ```
+
+    - Running the make command will execute the test code for the Nimcc compiler.
+
+    - The test code is written in C language and is in the file test.c. (It's worth noting that the test code itself is written in C language.)
+
+    - You can also write your own C code and compile it using Nimcc.
 
 ## Features
 - A nimcc can execute the code written in test.c.

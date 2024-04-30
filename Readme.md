@@ -4,10 +4,9 @@
 - 64-bit Linux environment
     - MacOS is quite compatible with Linux at the source level of assembly, but not fully compatible.
 
-- Having [nim](https://nim-lang.org/), gcc, make, binutils and libc6-dev installed.
-
 ## Setup
-- Setting up a Linux development environment using Docker
+- Setting up the Linux development environment using a Dockerfile.
+    - The environment will include the following tools installed: "[nim](https://nim-lang.org/), gcc, make, binutils, libc6-dev".
 
 - The code below assumes that Nimcc repository is cloned directly under HOME directory.
 

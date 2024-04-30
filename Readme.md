@@ -9,13 +9,13 @@
 ## Setup
 - Setting up a Linux development environment using Docker
 
-- The code below assumes that nim-cghd repository is cloned directly under HOME directory.
+- The code below assumes that Nimcc repository is cloned directly under HOME directory.
 
     ```
     Open the directory containing the Dockerfile and type
 
     $ docker build -t {container-name} .
-    $ docker run --rm -it -v -w /home/user/nim-cghd $HOME/nim-cghd:/home/user/nim-cghd {container-name}
+    $ docker run --rm -it -v -w /home/user/Nimcc $HOME/Nimcc:/home/user/Nimcc {container-name}
     ```
 
 ## How to run
@@ -23,15 +23,15 @@
 
 ## Features
 - A nimcc can execute the code written in test.c.
-<!-- - Basic arithmetic operations
-- Unary plus and unary minus
-- Comparison operations
-- Functions
-- Local variables
-- Control syntax (if, while, for)
-- Compound statement (Block)
-- Pointer
-- Primitive data eype (int) -->
+    - Basic arithmetic operations
+    - Unary plus and unary minus
+    - Comparison operations
+    - Functions
+    - Local variables
+    - Control syntax (if, while, for)
+    - Compound statement (Block)
+    - Pointer
+    - Primitive data eype (int)
 
 ## Reference
 - https://www.sigbus.info/compilerbook

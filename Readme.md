@@ -13,7 +13,7 @@
     ```
     Open the directory containing the Dockerfile and type
 
-    $ docker build -t {container-name} .
+    $ docker build -t nimcc .
     $ docker run --rm -it -w /home/user/Nimcc -v $HOME/Nimcc:/home/user/Nimcc nimcc
     ```
 

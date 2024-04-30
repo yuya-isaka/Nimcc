@@ -1,4 +1,4 @@
-# Nimcc: A mini C compiler written in Nim
+# Nimcc: A mini C compiler written in Nim (WIP)
 
 ## Prerequisites
 - 64-bit Linux environment

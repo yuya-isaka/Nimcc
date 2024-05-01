@@ -1,0 +1,6 @@
+**/*.o
+**/*.s
+**/a.out
+**/nimcc
+/asm*
+.DS_Store

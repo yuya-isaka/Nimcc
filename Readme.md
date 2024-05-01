@@ -79,6 +79,6 @@ Either a Docker environment or a native Linux environment on x86_64.
 
 https://www.sigbus.info/compilerbook
 
-## License MIT
+<!-- ## License MIT
 Copyright 2024 Yuya Isaka under the terms of the MIT license
-found at http://www.opensource.org/licenses/mit-license.html
+found at http://www.opensource.org/licenses/mit-license.html -->

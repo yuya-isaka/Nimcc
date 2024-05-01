@@ -2,9 +2,9 @@
 
 ## Prerequisites
 
-- Either a Docker environment or a native Linux environment on x86_64.
+Either a Docker environment or a native Linux environment on x86_64.
 
-    - MacOS is quite compatible with Linux at the source level of assembly, but not fully compatible.
+  - MacOS is quite compatible with Linux at the source level of assembly, but not fully compatible.
 
 ## Setup
 
@@ -77,9 +77,8 @@
 
 ## Reference
 
-- https://www.sigbus.info/compilerbook
+https://www.sigbus.info/compilerbook
 
-<!-- ## License
-MIT -->
-<!-- Copyright 2021 Yuya Isaka under the terms of the MIT license
-found at http://www.opensource.org/licenses/mit-license.html -->
+## License MIT
+Copyright 2024 Yuya Isaka under the terms of the MIT license
+found at http://www.opensource.org/licenses/mit-license.html
